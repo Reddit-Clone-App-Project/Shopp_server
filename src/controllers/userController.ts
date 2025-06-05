@@ -31,22 +31,21 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 };
 
-export const getProfile = async (req: Request, res: Response): Promise<Response> => {
-    const userId = Number(req.params.id);
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
+  const userId = Number(req.params.id);
 
-    try {
-        const user: User | undefined = await getUserById(userId);
-        if (!user) {
-            return res.status(404).json({
-                error: 'User not found'
-            });
-        }
-        const { password, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
-    } catch (err) {
-        console.error('Error cannot get user profile', err);
-        return res.status(500).json({
-            error: 'Error cannot get user profile'
-        });
+  try {
+    const user: User | undefined = await getUserById(userId);
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
+
+    const { password, ...userSafe } = user;
+    res.status(200).json(userSafe);
+  } catch (err) {
+    console.error('Error cannot get user profile', err);
+    res.status(500).json({ error: 'Error cannot get user profile' });
+  }
 };
