@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import { getAllUsers } from "../services/userService";
 import { createUser } from "../services/userService";
+import { getUserById, User} from '../services/userService';
 import bcrypt from 'bcrypt';
 
 export const fetchUsers = async (req: Request, res: Response) => {
@@ -30,3 +31,22 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 };
 
+export const getProfile = async (req: Request, res: Response): Promise<Response> => {
+    const userId = Number(req.params.id);
+
+    try {
+        const user: User | undefined = await getUserById(userId);
+        if (!user) {
+            return res.status(404).json({
+                error: 'User not found'
+            });
+        }
+        const { password, ...userWithoutPassword } = user;
+        return res.status(200).json(userWithoutPassword);
+    } catch (err) {
+        console.error('Error cannot get user profile', err);
+        return res.status(500).json({
+            error: 'Error cannot get user profile'
+        });
+    }
+};

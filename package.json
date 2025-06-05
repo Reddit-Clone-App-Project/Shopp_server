@@ -33,7 +33,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.18",
     "@types/csurf": "^1.11.5",
-    "@types/express": "^5.0.1",
+    "@types/express": "^5.0.2",
     "@types/helmet": "^0.0.48",
     "@types/node": "^22.13.17",
     "@types/pg": "^8.11.11",

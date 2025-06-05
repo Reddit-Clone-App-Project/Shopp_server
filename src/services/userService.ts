@@ -23,3 +23,19 @@ export const createUser = async (user: NewUser) => {
     );
     return result.rows[0];
 };
+
+export type User = {
+  fullname: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  birthdate: string;
+};
+
+export const getUserById = async (userId: number): Promise<User | undefined> => {
+    const result = await pool.query(
+        'SELECT * FROM app_user WHERE id = $1',
+        [userId]
+    );
+    return result.rows[0];
+};
