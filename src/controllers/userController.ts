@@ -1,6 +1,6 @@
 // !This file is an example and may not be functional without the rest of the application context.
 import { Request, Response } from "express";
-import { getAllUsers, createUser, getUserById, User, updateUserById, deleteUserById } from "../services/userService";
+import { getAllUsers, createUser, getUserById, User, updateUserById, deleteUserById, validationUser } from "../services/userService";
 import bcrypt from 'bcrypt';
 
 
@@ -83,9 +83,37 @@ export const deleteProfile = async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(200).json('User profile deleted succesfully!');
+    res.status(200).json('User profile deleted successfully!');
   } catch (err) {
     console.error('Error cannot delete user profile', err);
     res.status(500).json({ error: 'Error cannot delete user profile' });
+  }
+};
+
+
+
+export const loginUser = async (req: Request, res: Response) => {
+  const{ email, password } = req.body;
+  
+  try {
+    const databasePassword = await validationUser(email);
+
+    if (!databasePassword) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    };
+
+    const isValid = await bcrypt.compare(password, databasePassword);
+
+    if (!isValid) {
+      res.status(401).json({ error: 'Password is wrong' });
+      return;
+    };
+
+    res.status(200).json('User profile loged in successfully');
+
+  } catch (err) {
+    console.error('User cannot get verified', err);
+    res.status(500).json({ error: 'User cannot get verified' });
   }
 };

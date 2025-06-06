@@ -63,3 +63,12 @@ export const deleteUserById = async (userId: number): Promise<number | null> => 
     );
     return result.rowCount;
 };
+
+
+export const validationUser = async (email: string): Promise<string | undefined> => {
+    const result = await pool.query(
+        'SELECT password FROM app_user WHERE email = $1',
+        [email]
+    );
+    return result.rows[0]?.password;
+};
