@@ -1,19 +1,9 @@
-// !This file is an example and may not be functional without the rest of the application context.
 import pool from '../config/db';
+import { User, NewUser, UpdateUser } from '../types/users';
 
 export const getAllUsers = async () => {
     const result = await pool.query('SELECT * FROM app_user');
     return result.rows;
-};
-
-type UserRole = "buyer" | "seller" | "admin";
-
-type NewUser = {
-  fullname: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  birthdate: string;
 };
 
 export const createUser = async (user: NewUser) => {
@@ -24,14 +14,6 @@ export const createUser = async (user: NewUser) => {
     return result.rows[0];
 };
 
-export type User = {
-  fullname: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  birthdate: string;
-};
-
 export const getUserById = async (userId: number): Promise<User | undefined> => {
     const result = await pool.query(
         'SELECT * FROM app_user WHERE id = $1',
@@ -39,13 +21,6 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
     );
     return result.rows[0];
 };
-
-type UpdateUser = {
-    fullname: string;
-    birthdate: string;
-    avatarImg: string;
-    userId: number;
-}
 
 export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
     const result = await pool.query(
@@ -65,10 +40,5 @@ export const deleteUserById = async (userId: number): Promise<number | null> => 
 };
 
 
-export const validationUser = async (email: string): Promise<string | undefined> => {
-    const result = await pool.query(
-        'SELECT password FROM app_user WHERE email = $1',
-        [email]
-    );
-    return result.rows[0]?.password;
-};
+
+
