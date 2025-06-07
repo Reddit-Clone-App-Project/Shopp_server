@@ -1,3 +1,5 @@
+//! While this code is functional, the type of request is not properly defined, as also the err and decoded
+//! We need to look through the code and fix the types
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
@@ -17,7 +19,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
             process.env.ACCESS_TOKEN_SECRET as string,
             (err: any, decoded: any) => {
                 if (err) throw new Error("Forbidden"); //invalid token
-                //req.email = decoded.email;
+                req.email = decoded.email;
                 next();
             }
         );

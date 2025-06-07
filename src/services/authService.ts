@@ -13,4 +13,12 @@ export const assignRefreshTokenToDB = async (email: string, refreshToken: string
         'UPDATE app_user SET refresh_token = $1 WHERE email = $2',
         [refreshToken, email]
     );
-}
+};
+
+export const getUserByRefreshToken = async (refresh_token: string): Promise<string | undefined> => {
+    const result = await pool.query(
+        'SELECT * FROM app_user WHERE refresh_token = $1',
+        [refresh_token]
+    );
+    return result.rows[0];
+};

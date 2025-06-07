@@ -5,7 +5,6 @@ import {
   validationUser,
 } from "../services/authService";
 import {
-  getAllUsers,
   createUser,
   getUserById,
   updateUserById,
@@ -13,17 +12,6 @@ import {
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-
-export const fetchUsers = async (req: Request, res: Response) => {
-  try {
-    const users = await getAllUsers();
-    res.status(200).json(users);
-  } catch (error: any) {
-    res.status(500).json({
-      message: "An error occurred while fetching users",
-    });
-  }
-};
 
 export const registerUser = async (req: Request, res: Response) => {
   const { fullname, email, password, role, birthdate } = req.body;
@@ -142,7 +130,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const accessToken = jwt.sign(
       { email },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "1h" }
+      { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
@@ -160,3 +148,7 @@ export const loginUser = async (req: Request, res: Response) => {
     res.status(500).json({ error: "User cannot get verified" });
   }
 };
+
+export const logoutUser = async (req: Request, res: Response) => {
+  
+}
