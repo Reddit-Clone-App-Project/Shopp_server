@@ -3,6 +3,8 @@ import { User } from "../types/users";
 import {
   assignRefreshTokenToDB,
   validationUser,
+  getUserByRefreshToken,
+  removeRefreshTokenFromDB,
 } from "../services/authService";
 import {
   createUser,
@@ -150,5 +152,27 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 export const logoutUser = async (req: Request, res: Response) => {
+  const refreshToken = req.cookies['jwt'];
+      if (!refreshToken) {
+          res.status(401).json({ error: 'Refresh token not found' });
+          return;
+      }
   
+      if (!process.env.REFRESH_TOKEN_SECRET) {
+          console.error("JWT secrets are not defined in environment variables");
+          res.status(500).json({ error: "Internal server configuration error" });
+          return;
+      }
+  
+      const foundUser = getUserByRefreshToken(refreshToken);
+      if (!foundUser) {
+          res.clearCookie('jwt', { httpOnly: true });
+          res.status(403).json({ message: 'Forbidden' });
+          return;
+      }
+  
+      // Delete the refresh token from the database
+      await removeRefreshTokenFromDB(refreshToken);
+      res.clearCookie('jwt', { httpOnly: true });
+      res.status(200).json({ message: 'User logged out successfully' });
 }

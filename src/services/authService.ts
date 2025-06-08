@@ -22,3 +22,10 @@ export const getUserByRefreshToken = async (refresh_token: string): Promise<stri
     );
     return result.rows[0];
 };
+
+export const removeRefreshTokenFromDB = async (refresh_token: string): Promise<void> => {
+    await pool.query(
+        'UPDATE app_user SET refresh_token = NULL WHERE refresh_token = $1',
+        [refresh_token]
+    );
+}
