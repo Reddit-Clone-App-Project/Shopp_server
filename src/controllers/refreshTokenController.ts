@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import { getUserByRefreshToken } from '../services/authService';
+import { getUserByRefreshToken, getAdminByRefreshToken, getShipperByRefreshToken, getStorageByRefreshToken } from '../services/authService';
 
 export const handleRefreshToken = (req: Request, res: Response) : void => {
     const refreshToken = req.cookies['jwt'];
@@ -15,12 +15,6 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
         return;
     }
 
-    const foundUser = getUserByRefreshToken(refreshToken);
-    if (!foundUser) {
-        res.status(403).json({ message: 'Forbidden' });
-        return;
-    }
-
     jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET as string,
@@ -29,8 +23,36 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
                 res.status(403).json({ error: 'Invalid refresh token' });
                 return;
             }
+        
+            const role = decoded.role;
+            // console.log(role);
+            if (role === 'user'){
+                const foundUser = getUserByRefreshToken(refreshToken);
+                if (!foundUser) {
+                    res.status(403).json({ message: 'Forbidden' });
+                    return;
+                }
+            }else if (role === 'admin'){
+                const foundAdmin = getAdminByRefreshToken(refreshToken);
+                if (!foundAdmin) {
+                    res.status(403).json({ message: 'Forbidden' });
+                    return;
+                }
+            }else if (role === 'shipper'){
+                const foundShipper = getShipperByRefreshToken(refreshToken);
+                if (!foundShipper) {
+                    res.status(403).json({ message: 'Forbidden' });
+                    return;
+                }
+            }else if (role === 'storage'){
+                const foundStorage = getStorageByRefreshToken(refreshToken);
+                if (!foundStorage) {
+                    res.status(403).json({ message: 'Forbidden' });
+                    return;
+                }
+            }
 
-        const newAccessToken = jwt.sign({ email: decoded.email }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
-        res.json({ accessToken: newAccessToken });
+            const newAccessToken = jwt.sign({ email: decoded.email }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
+            res.json({ accessToken: newAccessToken });
     });
 }

@@ -1,4 +1,5 @@
-export type AdminRole = "admin" | "shipper" | "storage";
+export type shipping_unit = 'Fast Express' | 'Airline Post'| 'American Post'| 'Europe Express';
+
 
 // Admin employee
 
@@ -29,14 +30,14 @@ export type UpdateAdmin = {
 export type NewStorage = {
     email: string;
     password: string;
-    shipping_unit: string;
+    shipping_unit: shipping_unit;
     location: string;
 };
 
 export type Storage = {
     email: string;
     password: string;
-    shipping_unit: string;
+    shipping_unit: shipping_unit;
     location: string;
     profile_img?: string;
     refresh_token?: string;
@@ -44,9 +45,7 @@ export type Storage = {
 
 export type UpdateStorage = {
     email: string;
-    shipping_unit: string;
     location: string;
-    avatarImg: string;
     storageId: number;
 };
 
@@ -56,7 +55,7 @@ export type NewShipper = {
     email: string;
     password: string;
     birthdate: string;
-    shipping_unit: string;
+    shipping_unit: shipping_unit;
     storage_id: number;
 }
 
@@ -65,7 +64,7 @@ export type Shipper = {
     email: string;
     password: string;
     birthdate: string;
-    shipping_unit: string;
+    shipping_unit: shipping_unit;
     storage_id: number;
     profile_img?: string;
     refresh_token?: string;
