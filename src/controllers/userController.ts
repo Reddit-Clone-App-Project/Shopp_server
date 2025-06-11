@@ -16,16 +16,14 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { fullname, email, password, role, birthdate } = req.body;
+  const { email, password, role } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await createUser({
-      fullname,
       email,
       password: hashedPassword,
       role,
-      birthdate,
     });
     res.status(201).json(newUser);
   } catch (err) {

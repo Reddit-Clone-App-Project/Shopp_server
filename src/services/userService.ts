@@ -3,8 +3,8 @@ import { User, NewUser, UpdateUser } from '../types/users';
 
 export const createUser = async (user: NewUser) => {
     const result = await pool.query(
-        'INSERT INTO app_user (full_name, email, password, role, date_of_birth) VALUES ($1, $2, $3, $4, $5) RETURNING id, full_name, email, role',
-        [user.fullname, user.email, user.password, user.role, user.birthdate]
+        'INSERT INTO app_user (email, password, role) VALUES ($1, $2, $3) RETURNING id, email, role',
+        [user.email, user.password, user.role]
     );
     return result.rows[0];
 };

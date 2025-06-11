@@ -1,11 +1,9 @@
 export type UserRole = "buyer" | "seller";
 
 export type NewUser = {
-  fullname: string;
   email: string;
   password: string;
   role: UserRole;
-  birthdate: string;
 };
 
 export type User = {
