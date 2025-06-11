@@ -25,7 +25,7 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
             }
         
             const role = decoded.role;
-            // console.log(role);
+           
             if (role === 'user'){
                 const foundUser = getUserByRefreshToken(refreshToken);
                 if (!foundUser) {

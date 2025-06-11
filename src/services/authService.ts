@@ -1,19 +1,36 @@
 import pool from '../config/db';
+import validator  from 'validator';
 
 // User
-export const validationUser = async (email: string): Promise<string | undefined> => {
-    const result = await pool.query(
-        'SELECT password FROM app_user WHERE email = $1',
-        [email]
-    );
+export const validationUser = async (eOrP: string): Promise<string | undefined> => {
+    let result: any;
+    if (validator.isEmail(eOrP)) {
+        result = await pool.query(
+            'SELECT password FROM app_user WHERE email = $1',
+            [eOrP]
+        );
+    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
+        result = await pool.query(
+            'SELECT password FROM app_user WHERE phone_number = $1',
+            [eOrP]
+        );
+    }
+
     return result.rows[0]?.password;
 };
 
-export const assignRefreshTokenToDB = async (email: string, refreshToken: string): Promise<void> => {
-    await pool.query(
-        'UPDATE app_user SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
-    );
+export const assignRefreshTokenToDB = async (eOrP: string, refreshToken: string): Promise<void> => {
+    if(validator.isEmail(eOrP)){
+        await pool.query(
+            'UPDATE app_user SET refresh_token = $1 WHERE email = $2',
+            [refreshToken, eOrP]
+        );
+    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
+        await pool.query(
+            'UPDATE app_user SET refresh_token = $1 WHERE phone_number = $2',
+            [refreshToken, eOrP]
+        );
+    }
 };
 
 export const getUserByRefreshToken = async (refresh_token: string): Promise<string | undefined> => {

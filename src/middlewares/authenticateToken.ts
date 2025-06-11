@@ -12,7 +12,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
     try{
         const authHeader = req.headers['authorization'];
         if(!authHeader) throw new Error('Unauthorized');
-        console.log(authHeader); //Bearer token
+        
         const token = authHeader.split(' ')[1];
         jwt.verify(
             token,

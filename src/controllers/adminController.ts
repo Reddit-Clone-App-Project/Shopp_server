@@ -41,7 +41,7 @@ export const getProfileAdmin = async (
   res: Response
 ): Promise<void> => {
   const adminId = Number(req.params.id);
-  console.log("Admin ID:", adminId);
+  
 
   try {
     const admin: Admin | undefined = await getAdminById(adminId);

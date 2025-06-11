@@ -30,7 +30,7 @@ export const getProfileStorage = async (
   res: Response
 ): Promise<void> => {
   const storageId = Number(req.params.id);
-  console.log("Storage ID:", storageId);
+  
 
   try {
     const storage: Storage | undefined = await getStorageById(storageId);
