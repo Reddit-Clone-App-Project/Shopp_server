@@ -32,7 +32,7 @@ export const getProfileShipper = async (
   res: Response
 ): Promise<void> => {
   const shipperId = Number(req.params.id);
-  console.log("Shipper ID:", shipperId);
+  
 
   try {
     const shipper: Shipper | undefined = await getShipperById(shipperId);

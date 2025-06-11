@@ -1,16 +1,18 @@
 export type UserRole = "buyer" | "seller";
 
 export type NewUser = {
-  fullname: string;
   email: string;
+  phone_number: string;
+  nationality: string | null;
   password: string;
   role: UserRole;
-  birthdate: string;
 };
 
 export type User = {
   fullname: string;
   email: string;
+  phone_number: string;
+  nationality: string | null;
   password: string;
   role: UserRole;
   birthdate: string;
@@ -22,5 +24,7 @@ export type UpdateUser = {
     birthdate: string;
     avatarImg: string;
     userId: number;
+    phone_number: string;
+    nationality: string | null;
 }
 

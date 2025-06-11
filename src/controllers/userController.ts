@@ -14,18 +14,20 @@ import {
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import parsePhoneNumberFromString from "libphonenumber-js";
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { fullname, email, password, role, birthdate } = req.body;
+  const { email, phone_number, password, role } = req.body;
+  const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await createUser({
-      fullname,
       email,
+      phone_number,
       password: hashedPassword,
       role,
-      birthdate,
+      nationality,
     });
     res.status(201).json(newUser);
   } catch (err) {
@@ -41,7 +43,7 @@ export const getProfile = async (
   res: Response
 ): Promise<void> => {
   const userId = Number(req.params.id);
-  console.log("User ID:", userId);
+  
 
   try {
     const user: User | undefined = await getUserById(userId);
@@ -64,11 +66,14 @@ export const updateProfile = async (
   res: Response
 ): Promise<void> => {
   const userId = Number(req.params.id);
-  const { fullname, birthdate, avatarImg } = req.body;
+  const { fullname, phone_number, birthdate, avatarImg } = req.body;
+  const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
     const updatedUser = await updateUserById({
       fullname,
+      nationality,
+      phone_number,
       birthdate,
       avatarImg,
       userId,
@@ -105,7 +110,7 @@ export const deleteProfile = async (req: Request, res: Response) => {
 };
 
 export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { eOrP, password } = req.body;
 
   if (!process.env.ACCESS_TOKEN_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
     console.error("JWT secrets are not defined in environment variables");
@@ -114,8 +119,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 
   try {
-    const databasePassword = await validationUser(email);
-
+    const databasePassword = await validationUser(eOrP);
     if (!databasePassword) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -130,18 +134,18 @@ export const loginUser = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { email },
+      { eOrP },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { email, role: "user" },
+      { eOrP, role: "user" },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
 
-    assignRefreshTokenToDB(email, refreshToken);
+    assignRefreshTokenToDB(eOrP, refreshToken);
 
     res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
     res.status(200).json({ accessToken });

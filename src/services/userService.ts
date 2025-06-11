@@ -3,8 +3,8 @@ import { User, NewUser, UpdateUser } from '../types/users';
 
 export const createUser = async (user: NewUser) => {
     const result = await pool.query(
-        'INSERT INTO app_user (full_name, email, password, role, date_of_birth) VALUES ($1, $2, $3, $4, $5) RETURNING id, full_name, email, role',
-        [user.fullname, user.email, user.password, user.role, user.birthdate]
+        'INSERT INTO app_user (email, phone_number, nationality, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, phone_number, nationality, role',
+        [user.email, user.phone_number, user.nationality, user.password, user.role]
     );
     return result.rows[0];
 };
@@ -19,8 +19,8 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
 
 export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
     const result = await pool.query(
-        'UPDATE app_user SET full_name = $1, date_of_birth = $2, profile_img = $3, updated_at = NOW() WHERE id = $4 RETURNING id, full_name, date_of_birth, profile_img',
-        [user.fullname, user.birthdate, user.avatarImg, user.userId]
+        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, updated_at = NOW() WHERE id = $6 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img',
+        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.userId]
     );
     return result.rows[0];
 };
