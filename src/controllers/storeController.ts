@@ -1,0 +1,36 @@
+import { Request, Response } from "express";
+import { StoreOutput  } from '../types/store';
+import { createAddress, createStore, createOwner } from "../services/storeService";
+
+export const registerStore = async (req: Request, res: Response) => {
+    const { name, address, email, phone_number } = req.body;
+
+    try {
+        if (req.user?.id === undefined) {
+            res.status(400).json({ error: 'User ID is required to create a store owner.' });
+            return;
+        };
+
+        const address_id: number = await createAddress(address);
+
+        const newStore: StoreOutput = await createStore({
+            name,
+            address_id,
+            email,
+            phone_number,
+        });
+
+        await createOwner({
+            store_id: newStore.id,
+            app_user_id: req.user.id,
+            role: 'owner',
+        });
+
+        res.status(201).json(newStore);
+    }catch (err) {
+        console.error('Error in the creation of the store:', err);
+        res.status(500).json({
+            error: 'Error in the creation of the store',
+        });
+    };
+};
