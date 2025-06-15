@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/register', registerShipper);
 router.post('/login', loginShipper);
-router.get('/logout', logoutShipper);
+router.post('/logout', logoutShipper);
 router.get('/profile/:id', authenticateToken, getProfileShipper);
 router.put('/profile/:id', authenticateToken, updateProfileShipper);
 router.delete('/profile/:id', authenticateToken, deleteProfileShipper);
