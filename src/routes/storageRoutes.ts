@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/register', registerStorage);
 router.post('/login', loginStorage);
-router.get('/logout', logoutStorage);
+router.post('/logout', logoutStorage);
 router.get('/profile/:id', authenticateToken, getProfileStorage);
 router.put('/profile/:id', authenticateToken, updateProfileStorage);
 router.delete('/profile/:id', authenticateToken, deleteProfileStorage);
