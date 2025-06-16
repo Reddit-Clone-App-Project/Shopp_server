@@ -124,3 +124,11 @@ export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoU
         client.release();
     }
 };
+
+export const deleteStoreProfile = async (storeId: number): Promise<number | null> => {
+    const result = await pool.query(
+        'DELETE FROM store WHERE id = $1',
+        [storeId]
+    );
+    return result.rowCount;
+};

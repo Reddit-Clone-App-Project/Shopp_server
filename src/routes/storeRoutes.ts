@@ -1,5 +1,5 @@
 import express from "express";
-import { registerStore, getAllStores, getStoreById, updateStore } from "../controllers/storeController";
+import { registerStore, getAllStores, getStoreById, updateStore, deleteStore } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 
 const router = express.Router();
@@ -8,6 +8,6 @@ router.post('/', authenticateToken, registerStore);
 router.get('/all', getAllStores);
 router.get('/:id', getStoreById);
 router.put('/:id', updateStore);
-/*router.delete('/:id', deleteStore);*/
+router.delete('/:id', deleteStore);
 
 export default router;

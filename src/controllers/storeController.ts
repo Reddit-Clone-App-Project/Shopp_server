@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { Store, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile } from "../services/storeService";
 import { error } from "console";
 
 export const registerStore = async (req: Request, res: Response) => {
@@ -99,5 +99,22 @@ export const updateStore = async ( req: Request, res: Response ) => {
     } catch (err) {
         console.error("Error cannot update user profile", err);
         res.status(500).json({ error: "Error cannot update user profile" });
+    };
+};
+
+export const deleteStore = async ( req: Request, res: Response ) => {
+    const storeId = Number(req.params.id);
+    try {
+        const deleteCount: number | null = await deleteStoreProfile(storeId);
+
+        if (deleteCount === 0) {
+            res.status(404).json({ error: 'Store not found' });
+            return;
+        };
+
+        res.status(200).json('Store deleted successfully!');
+    } catch (err) {
+        console.error("Error cannot delete store", err);
+        res.status(500).json({ error: "Error cannot delete store" });
     };
 };
