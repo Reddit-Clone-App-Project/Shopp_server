@@ -1,5 +1,5 @@
 import pool from "../config/db";
-import { Store, StoreAddress, StoreOwner, StoreInfo, RatingStats, Review } from "../types/store";
+import { Store, StoreAddress, StoreOwner, StoreInfo, RatingStats, Review, StoreUpdate, StoreInfoUpdate } from "../types/store";
 
 export const createAddress = async (address: StoreAddress) => {
     const result = await pool.query(
@@ -41,13 +41,13 @@ export const getStoreProfile = async (storeId: number): Promise<StoreInfo | unde
 
 export const getStoreAddressById = async (addressId: number): Promise<StoreAddress | undefined> => {
     const result = await pool.query(
-        'SELECT full_name, phone_number, country, province, city, postal_code, address_line1, address_line2 WHERE id = $1',
+        'SELECT full_name, phone_number, country, province, city, postal_code, address_line1, address_line2 FROM address WHERE id = $1',
         [addressId]
     );
     return result.rows[0];
 };
 
-export const getRatingStats = async (storeId: number): Promise<RatingStats | undefined> => {
+export const getRatingStats = async (storeId: number): Promise<RatingStats> => {
     const result = await pool.query(
         'SELECT AVG(rating) AS average_rating, COUNT(*) AS total_reviews FROM review WHERE store_id = $1',
         [storeId]
@@ -58,7 +58,7 @@ export const getRatingStats = async (storeId: number): Promise<RatingStats | und
     };
 };
 
-export const getRecentReviews = async (storeId: number, limit: number): Promise<Review[] | undefined> => {
+export const getRecentReviews = async (storeId: number, limit: number): Promise<Review[]> => {
     const result = await pool.query(
         `SELECT r.id, r.user_id, r.rating, r.comment, u.fullname
             FROM review r
@@ -69,4 +69,58 @@ export const getRecentReviews = async (storeId: number, limit: number): Promise<
     [storeId, limit]
     );
     return result.rows;
+};
+
+
+export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoUpdate> => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            'UPDATE store SET name = $1, profile_img = $2, phone_number = $3, email = $4 WHERE id = $5',
+            [store.name, store.profile_img, store.phone_number, store.email, store.id]
+        );
+
+        const result = await client.query(
+            'SELECT address_id FROM store WHERE id = $1', 
+            [store.id]
+        );
+        const address_id = result.rows[0]?.address_id;
+
+        if (address_id && store.address) {
+        await client.query(
+          'UPDATE address SET full_name = $1, phone_number = $2, country = $3, province = $4, city = $5, postal_code = $6, address_line1 = $7, address_line2 = $8 WHERE id = $9',
+          [
+            store.address.full_name,
+            store.address.phone_number,
+            store.address.country,
+            store.address.province,
+            store.address.city,
+            store.address.postal_code,
+            store.address.address_line1,
+            store.address.address_line2,
+            address_id
+          ]
+        );
+      }
+        await client.query('COMMIT');
+        const storeResult = await client.query(
+            'SELECT id, name, address_id, profile_img, phone_number, email FROM store WHERE id = $1',
+            [store.id]
+        );
+        const addressResult = await client.query(
+            'SELECT full_name, phone_number, country, province, city, postal_code, address_line1, address_line2 FROM address WHERE id = $1',
+            [address_id]
+        );
+        return {
+            ...storeResult.rows[0],
+            address: addressResult.rows[0],
+        }; 
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
 };

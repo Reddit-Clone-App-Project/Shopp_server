@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
-import { Store, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews } from "../services/storeService";
+import { Store, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile } from "../services/storeService";
+import { error } from "console";
 
 export const registerStore = async (req: Request, res: Response) => {
     const { name, address, email, phone_number } = req.body;
@@ -78,5 +79,25 @@ export const getStoreById = async ( req: Request, res: Response ) => {
     } catch (err) {
         console.error("Error cannot get store profile", err);
         res.status(500).json({ error: "Error cannot get store profile" });
+    };
+};
+
+
+export const updateStore = async ( req: Request, res: Response ) => {
+    const id = Number(req.params.id);
+    const { name, profile_img, phone_number, email, address } = req.body;
+
+    try {
+        const updateStore: StoreInfoUpdate = await updateStoreProfile({ id, name, profile_img, phone_number, email, address });
+
+        if (!updateStore) {
+            res.status(404).json({ error: 'Store not found' });
+            return;
+        };
+
+        res.status(200).json(updateStore);
+    } catch (err) {
+        console.error("Error cannot update user profile", err);
+        res.status(500).json({ error: "Error cannot update user profile" });
     };
 };
