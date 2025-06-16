@@ -52,7 +52,7 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
                 }
             }
 
-            const newAccessToken = jwt.sign({ email: decoded.email }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
+            const newAccessToken = jwt.sign({ id: decoded.id, eOrP: decoded.eOrP }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
             res.json({ accessToken: newAccessToken });
     });
 }

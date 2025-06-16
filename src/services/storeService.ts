@@ -6,7 +6,7 @@ export const createAddress = async (address: StoreAddress) => {
         'INSERT INTO address (full_name, phone_number, country, province, city, postal_code, address_line1, address_line2) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
         [address.full_name, address.phone_number, address.country, address.province, address.city, address.postal_code, address.address_line1, address.address_line2]
     );
-    return result.rows[0];
+    return result.rows[0].id;
 };
 
 export const createStore = async (store: Store) => {
