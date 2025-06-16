@@ -25,6 +25,7 @@ export type UpdateUser = {
     avatarImg: string;
     userId: number;
     phone_number: string;
+    email: string;
     nationality: string | null;
 }
 

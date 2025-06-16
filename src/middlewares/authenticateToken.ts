@@ -1,9 +1,14 @@
-//! While this code is functional, the type of request is not properly defined, as also the err and decoded
-//! We need to look through the code and fix the types
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
-export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
+// Extend Express Request interface to include eOrP
+declare module 'express-serve-static-core' {
+    interface Request {
+        eOrP?: string;
+    }
+}
+
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
     if (!process.env.ACCESS_TOKEN_SECRET) {
         console.error("JWT secrets are not defined in environment variables");
         res.status(500).json({ error: "Internal server configuration error" });
@@ -19,7 +24,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
             process.env.ACCESS_TOKEN_SECRET as string,
             (err: any, decoded: any) => {
                 if (err) throw new Error("Forbidden"); //invalid token
-                req.email = decoded.email;
+                req.eOrP = decoded.eOrP;
                 next();
             }
         );

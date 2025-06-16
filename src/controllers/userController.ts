@@ -8,13 +8,14 @@ import {
 } from "../services/authService";
 import {
   createUser,
-  getUserById,
-  updateUserById,
-  deleteUserById,
+  updateUser,
+  deleteUserByEOrP,
+  getUserByEOrP,
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import parsePhoneNumberFromString from "libphonenumber-js";
+
 
 export const registerUser = async (req: Request, res: Response) => {
   const { email, phone_number, password, role } = req.body;
@@ -42,11 +43,12 @@ export const getProfile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const userId = Number(req.params.id);
-  
-
   try {
-    const user: User | undefined = await getUserById(userId);
+    if (typeof req.eOrP !== "string") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const user: User | undefined = await getUserByEOrP(req.eOrP);
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -66,13 +68,14 @@ export const updateProfile = async (
   res: Response
 ): Promise<void> => {
   const userId = Number(req.params.id);
-  const { fullname, phone_number, birthdate, avatarImg } = req.body;
+  const { fullname, phone_number, email, birthdate, avatarImg } = req.body;
   const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
-    const updatedUser = await updateUserById({
+    const updatedUser = await updateUser({
       fullname,
       nationality,
+      email,
       phone_number,
       birthdate,
       avatarImg,
@@ -92,10 +95,12 @@ export const updateProfile = async (
 };
 
 export const deleteProfile = async (req: Request, res: Response) => {
-  const userId = Number(req.params.id);
-
   try {
-    const deletedCount = await deleteUserById(userId);
+    if (typeof req.eOrP !== "string") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const deletedCount = await deleteUserByEOrP(req.eOrP);
 
     if (deletedCount === 0) {
       res.status(404).json({ error: "User not found" });

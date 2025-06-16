@@ -2,7 +2,8 @@ import * as express from 'express';
 
 declare global {
   namespace Express {
-    interface Request {
+    export interface Request {
+      eOrP?: string;
       user?: {
         id: number;
         email: string;
@@ -10,3 +11,4 @@ declare global {
     }
   }
 }
+
