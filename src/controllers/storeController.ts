@@ -20,6 +20,8 @@ export const registerStore = async (req: Request, res: Response) => {
             phone_number,
         });
 
+        /*MUST ADD CONTROLL TO BOTH SERVICES QUERY*/
+
         await createOwner({
             store_id: newStore.id,
             app_user_id: req.user.id,
