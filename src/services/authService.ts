@@ -1,5 +1,5 @@
 import pool from '../config/db';
-import validator  from 'validator';
+import validator from 'validator';
 
 // User
 export const validationUser = async (eOrP: string): Promise<string | undefined> => {
