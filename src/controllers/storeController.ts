@@ -71,10 +71,10 @@ export const getStoreById = async ( req: Request, res: Response ) => {
         const addressId = store.address_id;
         const address: StoreAddress | undefined = await getStoreAddressById(addressId);
         const ratingStats: RatingStats | undefined = await getRatingStats(storeId);
-        const recentReviews: Review[] | undefined  = await getRecentReviews(storeId, 5);
+        const recentReviews: Review[] = await getRecentReviews(storeId, 5) || [];
 
-        res.status(200).json({...store, ...ratingStats, reviews: recentReviews});
-        
+        res.status(200).json({...store, ...ratingStats, reviews: recentReviews, address});
+
     } catch (err) {
         console.error("Error cannot get store profile", err);
         res.status(500).json({ error: "Error cannot get store profile" });

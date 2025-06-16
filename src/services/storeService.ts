@@ -69,4 +69,4 @@ export const getRecentReviews = async (storeId: number, limit: number): Promise<
     [storeId, limit]
     );
     return result.rows;
-}
+};
