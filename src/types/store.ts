@@ -33,3 +33,26 @@ export type StoreOwner = {
     app_user_id: number;
     role: StoreRole;
 };
+
+export interface StoreInfo {
+    id: number;
+    name: string,
+    address_id: number,
+    profile_img: string,
+    phone_number: string,
+    email: string;
+};
+
+export interface RatingStats {
+    average_rating: number;
+    total_reviews: number;
+};
+
+export type StoreReviewList = Review[];
+export interface Review {
+    id: number;
+    user_id: number;
+    rating: number;
+    comment: string;
+    fullname: string;
+};
