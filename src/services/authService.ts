@@ -42,18 +42,18 @@ export const removeRefreshTokenFromDB = async (refresh_token: string): Promise<v
 };
 
 // Admin
-export const validationAdmin = async (email: string): Promise<string | undefined> => {
+export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM admin WHERE email = $1',
+        'SELECT id, password FROM admin WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBAdmin = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBAdmin = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE admin SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE admin SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 
@@ -73,18 +73,18 @@ export const removeRefreshTokenFromDBAdmin = async (refresh_token: string): Prom
 };
 
 // Shipper
-export const validationShipper = async (email: string): Promise<string | undefined> => {
+export const validationShipper = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM shipper WHERE email = $1',
+        'SELECT id, password FROM shipper WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBShipper = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBShipper = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE shipper SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE shipper SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 
@@ -104,18 +104,18 @@ export const removeRefreshTokenFromDBShipper = async (refresh_token: string): Pr
 };
 
 // Storage
-export const validationStorage = async (email: string): Promise<string | undefined> => {
+export const validationStorage = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM storage WHERE email = $1',
+        'SELECT id, password FROM storage WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBStorage = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBStorage = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE storage SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE storage SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 

@@ -40,11 +40,12 @@ export const getProfileAdmin = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const adminId = Number(req.params.id);
-  
-
   try {
-    const admin: Admin | undefined = await getAdminById(adminId);
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const admin: Admin | undefined = await getAdminById(req.user?.id);
 
     if (!admin) {
       res.status(404).json({ error: "Admin not found" });
@@ -63,15 +64,18 @@ export const updateProfileAdmin = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const adminId = Number(req.params.id);
   const { fullname, birthdate, avatarImg } = req.body;
 
   try {
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
     const updatedAdmin = await updateAdminById({
       fullname,
       birthdate,
       avatarImg,
-      adminId,
+      adminId: req.user?.id,
     });
 
     if (!updatedAdmin) {
@@ -87,10 +91,12 @@ export const updateProfileAdmin = async (
 };
 
 export const deleteProfileAdmin = async (req: Request, res: Response) => {
-  const adminId = Number(req.params.id);
-
   try {
-    const deletedCount = await deleteAdminById(adminId);
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const deletedCount = await deleteAdminById(req.user?.id);
 
     if (deletedCount === 0) {
       res.status(404).json({ error: "Admin not found" });
@@ -114,14 +120,21 @@ export const loginAdmin = async (req: Request, res: Response) => {
   }
 
   try {
-    const databasePassword = await validationAdmin(email);
+    const validationResult = await validationAdmin(email);
+
+    if (!validationResult) {
+      res.status(404).json({ error: "Admin not found" });
+      return;
+    }
+
+    const { id, databasePassword } = validationResult;
 
     if (!databasePassword) {
       res.status(404).json({ error: "Admin not found" });
       return;
     }
 
-    const isValid = await bcrypt.compare(password, databasePassword);
+    const isValid = await bcrypt.compare(String(password), String(databasePassword));
 
     if (!isValid) {
       res.status(401).json({ error: "Password is wrong" });
@@ -130,18 +143,18 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { email },
+      { id },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { email, role: "admin" },
+      { id, role: "admin" },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
 
-    assignRefreshTokenToDBAdmin(email, refreshToken);
+    assignRefreshTokenToDBAdmin(id, refreshToken);
 
     res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
     res.status(200).json({ accessToken });
