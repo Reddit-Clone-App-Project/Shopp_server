@@ -31,11 +31,12 @@ export const getProfileShipper = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const shipperId = Number(req.params.id);
-  
-
   try {
-    const shipper: Shipper | undefined = await getShipperById(shipperId);
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const shipper: Shipper | undefined = await getShipperById(req.user?.id);
 
     if (!shipper) {
       res.status(404).json({ error: "Shipper not found" });
@@ -54,15 +55,18 @@ export const updateProfileShipper = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const shipperId = Number(req.params.id);
   const { fullname, birthdate, avatarImg } = req.body;
 
   try {
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
     const updatedShipper = await updateShipperById({
       fullname,
       birthdate,
       avatarImg,
-      shipperId,
+      shipperId : req.user?.id,
     });
 
     if (!updatedShipper) {
@@ -78,10 +82,12 @@ export const updateProfileShipper = async (
 };
 
 export const deleteProfileShipper = async (req: Request, res: Response) => {
-  const shipperId = Number(req.params.id);
-
   try {
-    const deletedCount = await deleteShipperById(shipperId);
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const deletedCount = await deleteShipperById(req.user?.id);
 
     if (deletedCount === 0) {
       res.status(404).json({ error: "Shipper not found" });
@@ -105,14 +111,21 @@ export const loginShipper = async (req: Request, res: Response) => {
   }
 
   try {
-    const databasePassword = await validationShipper(email);
+    const validationResult = await validationShipper(email);
+
+    if (!validationResult) {
+      res.status(404).json({ error: "Shipper not found" });
+      return;
+    }
+
+    const { id, databasePassword } = validationResult;
 
     if (!databasePassword) {
       res.status(404).json({ error: "Shipper not found" });
       return;
     }
 
-    const isValid = await bcrypt.compare(password, databasePassword);
+    const isValid = await bcrypt.compare(String(password), String(databasePassword));
 
     if (!isValid) {
       res.status(401).json({ error: "Password is wrong" });
@@ -121,18 +134,18 @@ export const loginShipper = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { email },
+      { id },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { email, role: "shipper" },
+      { id, role: "shipper" },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
 
-    assignRefreshTokenToDBShipper(email, refreshToken);
+    assignRefreshTokenToDBShipper(id, refreshToken);
 
     res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
     res.status(200).json({ accessToken });

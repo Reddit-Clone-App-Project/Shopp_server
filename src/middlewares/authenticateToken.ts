@@ -1,16 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
-// Extend Express Request interface to include eOrP
-declare module 'express-serve-static-core' {
-    interface Request {
-        user?: {
-            id: number;
-            eOrP?: string;
-        }
-    }
-}
-
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
     if (!process.env.ACCESS_TOKEN_SECRET) {
         console.error("JWT secrets are not defined in environment variables");

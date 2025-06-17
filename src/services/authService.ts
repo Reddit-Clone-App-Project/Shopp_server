@@ -2,35 +2,28 @@ import pool from '../config/db';
 import validator from 'validator';
 
 // User
-export const validationUser = async (eOrP: string): Promise<string | undefined> => {
+export const validationUser = async (eOrP: string): Promise<{id: number, databasePassword: String} | undefined> => {
     let result: any;
     if (validator.isEmail(eOrP)) {
         result = await pool.query(
-            'SELECT password FROM app_user WHERE email = $1',
+            'SELECT id, password FROM app_user WHERE email = $1',
             [eOrP]
         );
     } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
         result = await pool.query(
-            'SELECT password FROM app_user WHERE phone_number = $1',
+            'SELECT id, password FROM app_user WHERE phone_number = $1',
             [eOrP]
         );
     }
 
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDB = async (eOrP: string, refreshToken: string): Promise<void> => {
-    if(validator.isEmail(eOrP)){
-        await pool.query(
-            'UPDATE app_user SET refresh_token = $1 WHERE email = $2',
-            [refreshToken, eOrP]
-        );
-    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
-        await pool.query(
-            'UPDATE app_user SET refresh_token = $1 WHERE phone_number = $2',
-            [refreshToken, eOrP]
-        );
-    }
+export const assignRefreshTokenToDB = async (id: number, refreshToken: string): Promise<void> => {
+    await pool.query(
+        'UPDATE app_user SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
+    );
 };
 
 export const getUserByRefreshToken = async (refresh_token: string): Promise<string | undefined> => {
@@ -49,18 +42,18 @@ export const removeRefreshTokenFromDB = async (refresh_token: string): Promise<v
 };
 
 // Admin
-export const validationAdmin = async (email: string): Promise<string | undefined> => {
+export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM admin WHERE email = $1',
+        'SELECT id, password FROM admin WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBAdmin = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBAdmin = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE admin SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE admin SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 
@@ -80,18 +73,18 @@ export const removeRefreshTokenFromDBAdmin = async (refresh_token: string): Prom
 };
 
 // Shipper
-export const validationShipper = async (email: string): Promise<string | undefined> => {
+export const validationShipper = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM shipper WHERE email = $1',
+        'SELECT id, password FROM shipper WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBShipper = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBShipper = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE shipper SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE shipper SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 
@@ -111,18 +104,18 @@ export const removeRefreshTokenFromDBShipper = async (refresh_token: string): Pr
 };
 
 // Storage
-export const validationStorage = async (email: string): Promise<string | undefined> => {
+export const validationStorage = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
     const result = await pool.query(
-        'SELECT password FROM storage WHERE email = $1',
+        'SELECT id, password FROM storage WHERE email = $1',
         [email]
     );
-    return result.rows[0]?.password;
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
 };
 
-export const assignRefreshTokenToDBStorage = async (email: string, refreshToken: string): Promise<void> => {
+export const assignRefreshTokenToDBStorage = async (id: number, refreshToken: string): Promise<void> => {
     await pool.query(
-        'UPDATE storage SET refresh_token = $1 WHERE email = $2',
-        [refreshToken, email]
+        'UPDATE storage SET refresh_token = $1 WHERE id = $2',
+        [refreshToken, id]
     );
 };
 

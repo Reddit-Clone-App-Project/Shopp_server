@@ -29,11 +29,12 @@ export const getProfileStorage = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const storageId = Number(req.params.id);
-  
-
   try {
-    const storage: Storage | undefined = await getStorageById(storageId);
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const storage: Storage | undefined = await getStorageById(req.user?.id);
 
     if (!storage) {
       res.status(404).json({ error: "Storage not found" });
@@ -52,14 +53,18 @@ export const updateProfileStorage = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const storageId = Number(req.params.id);
   const { email, location } = req.body;
 
   try {
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
     const updatedStorage = await updateStorageById({
       email,
       location,
-      storageId,
+      storageId: req.user?.id,
     });
 
     if (!updatedStorage) {
@@ -75,10 +80,12 @@ export const updateProfileStorage = async (
 };
 
 export const deleteProfileStorage = async (req: Request, res: Response) => {
-  const storageId = Number(req.params.id);
-
   try {
-    const deletedCount = await deleteStorageById(storageId);
+    if (typeof req.user?.id !== "number"){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const deletedCount = await deleteStorageById(req.user?.id);
 
     if (deletedCount === 0) {
       res.status(404).json({ error: "Storage not found" });
@@ -102,14 +109,15 @@ export const loginStorage = async (req: Request, res: Response) => {
   }
 
   try {
-    const databasePassword = await validationStorage(email);
+    const validationResult = await validationStorage(email);
 
-    if (!databasePassword) {
+    if (!validationResult || !validationResult.databasePassword) {
       res.status(404).json({ error: "Storage not found" });
       return;
     }
+    const { id, databasePassword } = validationResult;
 
-    const isValid = await bcrypt.compare(password, databasePassword);
+    const isValid = await bcrypt.compare(String(password), String(databasePassword));
 
     if (!isValid) {
       res.status(401).json({ error: "Password is wrong" });
@@ -118,18 +126,18 @@ export const loginStorage = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { email },
+      { id },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { email, role: "storage" },
+      { id, role: "storage" },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
 
-    assignRefreshTokenToDBStorage(email, refreshToken);
+    assignRefreshTokenToDBStorage(id, refreshToken);
 
     res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
     res.status(200).json({ accessToken });
