@@ -10,6 +10,35 @@ export const createUser = async (user: NewUser) => {
     return result.rows[0];
 };
 
+
+export const getUserById = async (userId: number): Promise<User | undefined> => {
+    const result = await pool.query(
+        'SELECT * FROM app_user WHERE id = $1',
+        [userId]
+    );
+    return result.rows[0];
+};
+
+export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
+    const result = await pool.query(
+        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, updated_at = NOW() WHERE id = $6 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img',
+        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.userId]
+    );
+    return result.rows[0];
+};
+
+
+export const deleteUserById = async (userId: number): Promise<number | null> => {
+    const result = await pool.query(
+        'DELETE FROM app_user WHERE id = $1',
+        [userId]
+    );
+    return result.rowCount;
+};
+
+
+/*
+!The functions below are deprecated and unnecessary, may be removed, or changed in the future
 export const getUserByEOrP = async (eOrP: string): Promise<User | undefined> => {
     let result: any;
     if (validator.isEmail(eOrP)) {
@@ -50,34 +79,6 @@ export const deleteUserByEOrP = async (eOrP: string): Promise<number | undefined
             [eOrP]
         );
     }
-    return result.rowCount;
-};
-
-
-/*
-!The functions below is deprecated, may be removed, or changed in the future for less security risks
-export const getUserById = async (userId: number): Promise<User | undefined> => {
-    const result = await pool.query(
-        'SELECT * FROM app_user WHERE id = $1',
-        [userId]
-    );
-    return result.rows[0];
-};
-
-export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
-    const result = await pool.query(
-        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, updated_at = NOW() WHERE id = $6 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img',
-        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.userId]
-    );
-    return result.rows[0];
-};
-
-
-export const deleteUserById = async (userId: number): Promise<number | null> => {
-    const result = await pool.query(
-        'DELETE FROM app_user WHERE id = $1',
-        [userId]
-    );
     return result.rowCount;
 };
 */

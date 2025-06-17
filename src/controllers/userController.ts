@@ -8,9 +8,9 @@ import {
 } from "../services/authService";
 import {
   createUser,
-  updateUser,
-  deleteUserByEOrP,
-  getUserByEOrP,
+  updateUserById,
+  deleteUserById,
+  getUserById,
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -44,11 +44,11 @@ export const getProfile = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (typeof req.eOrP !== "string") {
+    if (typeof req.user?.id !== "number") {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
-    const user: User | undefined = await getUserByEOrP(req.eOrP);
+    const user: User | undefined = await getUserById(req.user?.id);
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -67,19 +67,22 @@ export const updateProfile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const userId = Number(req.params.id);
+  if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+  }
   const { fullname, phone_number, email, birthdate, avatarImg } = req.body;
   const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
-    const updatedUser = await updateUser({
+    const updatedUser = await updateUserById({
       fullname,
       nationality,
       email,
       phone_number,
       birthdate,
       avatarImg,
-      userId,
+      userId: req.user?.id,
     });
 
     if (!updatedUser) {
@@ -96,11 +99,11 @@ export const updateProfile = async (
 
 export const deleteProfile = async (req: Request, res: Response) => {
   try {
-    if (typeof req.eOrP !== "string") {
+    if (typeof req.user?.id !== "number") {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
-    const deletedCount = await deleteUserByEOrP(req.eOrP);
+    const deletedCount = await deleteUserById(req.user?.id);
 
     if (deletedCount === 0) {
       res.status(404).json({ error: "User not found" });
@@ -124,13 +127,17 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 
   try {
-    const databasePassword = await validationUser(eOrP);
-    if (!databasePassword) {
+    const userValidationResult = await validationUser(eOrP);
+    if (!userValidationResult || !userValidationResult.databasePassword) {
       res.status(404).json({ error: "User not found" });
       return;
     }
+    const { id, databasePassword } = userValidationResult;
 
-    const isValid = await bcrypt.compare(password, databasePassword);
+    const isValid = await bcrypt.compare(
+      String(password),
+      String(databasePassword)
+    );
 
     if (!isValid) {
       res.status(401).json({ error: "Password is wrong" });
@@ -139,18 +146,18 @@ export const loginUser = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { eOrP },
+      { id },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { eOrP, role: "user" },
+      { id, role: "user" },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
 
-    assignRefreshTokenToDB(eOrP, refreshToken);
+    assignRefreshTokenToDB(id, refreshToken);
 
     res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
     res.status(200).json({ accessToken });
