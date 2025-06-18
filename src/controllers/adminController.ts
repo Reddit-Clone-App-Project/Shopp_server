@@ -143,7 +143,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { id },
+      { id, role: 'admin' },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
