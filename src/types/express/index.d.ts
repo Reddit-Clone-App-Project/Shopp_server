@@ -1,12 +1,13 @@
 import * as express from 'express';
+interface JwtPayload {
+  id: number;
+  role: string;
+};
 
 declare global {
   namespace Express {
-    export interface Request {
-      user?: {
-        id: number;
-      };
+    interface Request {
+      user?: JwtPayload;
     }
   }
-}
-
+};

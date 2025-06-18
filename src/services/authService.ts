@@ -2,7 +2,7 @@ import pool from '../config/db';
 import validator from 'validator';
 
 // User
-export const validationUser = async (eOrP: string): Promise<{id: number, databasePassword: String} | undefined> => {
+export const validationUser = async (eOrP: string): Promise<{id: number, databasePassword: string} | undefined> => {
     let result: any;
     if (validator.isEmail(eOrP)) {
         result = await pool.query(
@@ -42,7 +42,7 @@ export const removeRefreshTokenFromDB = async (refresh_token: string): Promise<v
 };
 
 // Admin
-export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
+export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: string} | undefined> => {
     const result = await pool.query(
         'SELECT id, password FROM admin WHERE email = $1',
         [email]
@@ -73,7 +73,7 @@ export const removeRefreshTokenFromDBAdmin = async (refresh_token: string): Prom
 };
 
 // Shipper
-export const validationShipper = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
+export const validationShipper = async (email: string): Promise<{id: number, databasePassword: string} | undefined> => {
     const result = await pool.query(
         'SELECT id, password FROM shipper WHERE email = $1',
         [email]
@@ -104,7 +104,7 @@ export const removeRefreshTokenFromDBShipper = async (refresh_token: string): Pr
 };
 
 // Storage
-export const validationStorage = async (email: string): Promise<{id: number, databasePassword: String} | undefined> => {
+export const validationStorage = async (email: string): Promise<{id: number, databasePassword: string} | undefined> => {
     const result = await pool.query(
         'SELECT id, password FROM storage WHERE email = $1',
         [email]
