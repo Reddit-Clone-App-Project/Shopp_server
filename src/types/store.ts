@@ -1,10 +1,14 @@
 export type SellerRole = 'seller';
 
-export type Store = {
-    name: string;
-    address_id: number;
-    email: string,
-    phone_number: string;
+export type StoreData = {
+    storeName: string;
+    storeEmail: string;
+    storePhone: string;
+    address: StoreAddress;
+    expressShipping: boolean;
+    fastShipping: boolean;
+    economicalShipping: boolean;
+    bulkyShipping: boolean;
 };
 
 export type StoreOutput = {

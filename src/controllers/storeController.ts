@@ -1,11 +1,21 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
-import { Store, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
+import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
 import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile } from "../services/storeService";
-import { error } from "console";
 
-export const registerStore = async (req: Request, res: Response) => {
-    const { name, address, email, phone_number } = req.body;
+export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
+    const data = req.body;
+    const {
+        storeName,
+        storeEmail,
+        storePhone,
+        address,
+        expressShipping,
+        fastShipping,
+        economicalShipping,
+        bulkyShipping,
+    } = data;
+
     const client = await pool.connect();
 
     try {
@@ -17,20 +27,24 @@ export const registerStore = async (req: Request, res: Response) => {
             return;
         };
 
-        const address_id: number = await createAddress(address);
+        const address_id: number = await createAddress(address, client);
 
         const newStore: StoreOutput = await createStore({
-            name,
-            address_id,
-            email,
-            phone_number,
-        });
+            storeName,
+            storeEmail,
+            storePhone,
+            address,
+            expressShipping,
+            fastShipping,
+            economicalShipping,
+            bulkyShipping,
+        }, address_id, client);
 
         await createOwner({
             store_id: newStore.id,
             app_user_id: req.user.id,
             role: 'owner',
-        });
+        }, client);
 
         await client.query('COMMIT');
         res.status(201).json(newStore);
