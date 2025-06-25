@@ -34,7 +34,7 @@ export const getStores = async () => {
 
 export const getStoreProfile = async (storeId: number): Promise<StoreInfo | undefined> => {
     const result = await pool.query(
-        'SELECT id, name, address_id, profile_img, phone_number, email FROM store WHERE id = $1',
+        'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping FROM store WHERE id = $1',
         [storeId]
     );
     return result.rows[0];
@@ -72,6 +72,18 @@ export const getRecentReviews = async (storeId: number, limit: number): Promise<
     return result.rows;
 };
 
+export const checkStoreOwner = async (storeId: number, ownerId: number): Promise<boolean> => {
+    const result = await pool.query(
+        'SELECT app_user_id FROM store_user WHERE store_id = $1',
+       [storeId] 
+    );
+    const trueOwnerId = result.rows[0]?.app_user_id;
+    if (trueOwnerId === ownerId) {
+        return true;
+    } else {
+        return false;
+    };
+};
 
 export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoUpdate> => {
     const client = await pool.connect();
@@ -79,13 +91,13 @@ export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoU
         await client.query('BEGIN');
 
         await client.query(
-            'UPDATE store SET name = $1, profile_img = $2, phone_number = $3, email = $4 WHERE id = $5',
-            [store.name, store.profile_img, store.phone_number, store.email, store.id]
+            'UPDATE store SET name = $1, profile_img = $2, phone_number = $3, email = $4, express_shipping = $5, fast_shipping = $6, economical_shipping = $7, bulky_shipping = $8 WHERE id = $9',
+            [store.storeName, store.storeProfile_img, store.storePhone, store.storeEmail, store.expressShipping, store.fastShipping, store.economicalShipping, store.bulkyShipping, store.storeId]
         );
 
         const result = await client.query(
             'SELECT address_id FROM store WHERE id = $1', 
-            [store.id]
+            [store.storeId]
         );
         const address_id = result.rows[0]?.address_id;
 
@@ -107,8 +119,8 @@ export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoU
       }
         await client.query('COMMIT');
         const storeResult = await client.query(
-            'SELECT id, name, address_id, profile_img, phone_number, email FROM store WHERE id = $1',
-            [store.id]
+            'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping FROM store WHERE id = $1',
+            [store.storeId]
         );
         const addressResult = await client.query(
             'SELECT full_name, phone_number, country, province, city, postal_code, address_line1, address_line2 FROM address WHERE id = $1',

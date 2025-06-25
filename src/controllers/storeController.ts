@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner } from "../services/storeService";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -71,7 +71,6 @@ export const getAllStores = async ( req: Request, res: Response ) => {
   };
 };
 
-
 export const getStoreById = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
 
@@ -83,7 +82,7 @@ export const getStoreById = async ( req: Request, res: Response ) => {
             return;
         };
 
-        const addressId = store.address_id;
+        const addressId: number = store.address_id;
         const address: StoreAddress | undefined = await getStoreAddressById(addressId);
         const ratingStats: RatingStats | undefined = await getRatingStats(storeId);
         const recentReviews: Review[] = await getRecentReviews(storeId, 5) || [];
@@ -97,19 +96,54 @@ export const getStoreById = async ( req: Request, res: Response ) => {
 };
 
 
-export const updateStore = async ( req: Request, res: Response ) => {
-    const id = Number(req.params.id);
-    const { name, profile_img, phone_number, email, address } = req.body;
-
+export const updateStore = async ( req: Request, res: Response ): Promise<void> => {
+    const storeId = Number(req.params.id);
+    const data = req.body;
+    const {
+        storeName,
+        storeProfile_img,
+        storeEmail,
+        storePhone,
+        address,
+        expressShipping,
+        fastShipping,
+        economicalShipping,
+        bulkyShipping,
+    } = data;
+    
     try {
-        const updateStore: StoreInfoUpdate = await updateStoreProfile({ id, name, profile_img, phone_number, email, address });
+        if (req.user?.id === undefined) {
+            res.status(400).json({ error: 'User ID is required to update a store.' });
+            return;
+        };
 
-        if (!updateStore) {
+        const userId = req.user?.id;
+        const checkOwner: boolean = await checkStoreOwner(storeId, userId);
+
+        if (!checkOwner) {
+            res.status(400).json({ error: 'You must be the owner of the store!'});
+            return;
+        };
+
+        const updatedStore: StoreInfoUpdate = await updateStoreProfile({ 
+            storeId, 
+            storeName,
+            storeProfile_img, 
+            storeEmail,
+            storePhone,
+            address,
+            expressShipping,
+            fastShipping,
+            economicalShipping,
+            bulkyShipping, 
+        });
+
+        if (!updatedStore) {
             res.status(404).json({ error: 'Store not found' });
             return;
         };
 
-        res.status(200).json(updateStore);
+        res.status(200).json(updatedStore);
     } catch (err) {
         console.error("Error cannot update user profile", err);
         res.status(500).json({ error: "Error cannot update user profile" });
@@ -119,6 +153,19 @@ export const updateStore = async ( req: Request, res: Response ) => {
 export const deleteStore = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
     try {
+        if (req.user?.id === undefined) {
+            res.status(400).json({ error: 'User ID is required to delete a store.' });
+            return;
+        };
+
+        const userId = req.user?.id;
+        const checkOwner: boolean = await checkStoreOwner(storeId, userId);
+
+        if (!checkOwner) {
+            res.status(400).json({ error: 'You must be the owner of the store!'});
+            return;
+        };
+
         const deleteCount: number | null = await deleteStoreProfile(storeId);
 
         if (deleteCount === 0) {

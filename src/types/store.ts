@@ -30,12 +30,16 @@ export type StoreAddress = {
     address_line2: string;
 };
 export interface StoreUpdate {
-    id: number;
-    name: string;
-    profile_img: string;
-    phone_number: string;
-    email: string;
+    storeId: number;
+    storeName: string;
+    storeProfile_img: string;
+    storeEmail: string;
+    storePhone: string;
     address: StoreAddress;
+    expressShipping: boolean;
+    fastShipping: boolean;
+    economicalShipping: boolean;
+    bulkyShipping: boolean;
 };
 
 export type StoreRole = 'owner' | 'manager' | 'editor';
@@ -49,21 +53,30 @@ export type StoreOwner = {
 
 export interface StoreInfo {
     id: number;
-    name: string,
+    storeName: string,
     address_id: number,
-    profile_img: string,
-    phone_number: string,
-    email: string;
+    address: StoreAddress,
+    storeProfile_img: string,
+    storePhone: string,
+    storeEmail: string;
+    expressShipping: boolean;
+    fastShipping: boolean;
+    economicalShipping: boolean;
+    bulkyShipping: boolean;
 };
 
 export interface StoreInfoUpdate {
     id: number;
-    name: string,
-    address_id: number,
-    profile_img: string,
-    phone_number: string,
-    email: string;
+    storeName: string;
+    storeProfile_img: string;
+    storeEmail: string;
+    storePhone: string;
+    address_id: number;
     address: StoreAddress;
+    expressShipping: boolean;
+    fastShipping: boolean;
+    economicalShipping: boolean;
+    bulkyShipping: boolean;
 };
 export interface RatingStats {
     average_rating: number;
