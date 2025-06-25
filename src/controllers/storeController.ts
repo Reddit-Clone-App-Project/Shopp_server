@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
 import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner } from "../services/storeService";
-import { error } from "console";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -72,7 +71,6 @@ export const getAllStores = async ( req: Request, res: Response ) => {
   };
 };
 
-/* need change */ 
 export const getStoreById = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
 
@@ -84,7 +82,7 @@ export const getStoreById = async ( req: Request, res: Response ) => {
             return;
         };
 
-        const addressId = store.address_id;
+        const addressId: number = store.address_id;
         const address: StoreAddress | undefined = await getStoreAddressById(addressId);
         const ratingStats: RatingStats | undefined = await getRatingStats(storeId);
         const recentReviews: Review[] = await getRecentReviews(storeId, 5) || [];

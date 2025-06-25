@@ -34,7 +34,7 @@ export const getStores = async () => {
 
 export const getStoreProfile = async (storeId: number): Promise<StoreInfo | undefined> => {
     const result = await pool.query(
-        'SELECT id, name, address_id, profile_img, phone_number, email FROM store WHERE id = $1',
+        'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping FROM store WHERE id = $1',
         [storeId]
     );
     return result.rows[0];
