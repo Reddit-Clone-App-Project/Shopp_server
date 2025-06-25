@@ -73,7 +73,6 @@ export const getAllStores = async ( req: Request, res: Response ) => {
 };
 
 /* need change */ 
-numb
 export const getStoreById = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
 
@@ -99,7 +98,7 @@ export const getStoreById = async ( req: Request, res: Response ) => {
 };
 
 
-export const updateStore = async ( req: Request, res: Response ) => {
+export const updateStore = async ( req: Request, res: Response ): Promise<void> => {
     const storeId = Number(req.params.id);
     const data = req.body;
     const {
@@ -116,7 +115,7 @@ export const updateStore = async ( req: Request, res: Response ) => {
     
     try {
         if (req.user?.id === undefined) {
-            res.status(400).json({ error: 'User ID is required to create a store owner.' });
+            res.status(400).json({ error: 'User ID is required to update a store.' });
             return;
         };
 
@@ -156,6 +155,19 @@ export const updateStore = async ( req: Request, res: Response ) => {
 export const deleteStore = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
     try {
+        if (req.user?.id === undefined) {
+            res.status(400).json({ error: 'User ID is required to delete a store.' });
+            return;
+        };
+
+        const userId = req.user?.id;
+        const checkOwner: boolean = await checkStoreOwner(storeId, userId);
+
+        if (!checkOwner) {
+            res.status(400).json({ error: 'You must be the owner of the store!'});
+            return;
+        };
+
         const deleteCount: number | null = await deleteStoreProfile(storeId);
 
         if (deleteCount === 0) {
