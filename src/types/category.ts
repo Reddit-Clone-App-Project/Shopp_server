@@ -1,5 +1,6 @@
 // User
 export type ActiveCategory = {
+    id: number;
     name: string;
     slug: string;
     description: string;
@@ -16,7 +17,7 @@ export type Category = {
 }
 
 export type UpdateCategory = {
-    id: number;
+    id?: number;
     name: string;
     slug: string;
     parent_id: number | null;
