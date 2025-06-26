@@ -1,5 +1,20 @@
 import pool from "../config/db";
-import { Product, ProductImage, ProductVariant, UpdateProduct, UpdateProductImage, UpdateProductVariant } from "../types/product";
+import { CompleteProduct, Product, ProductImage, ProductVariant, UpdateProduct, UpdateProductImage, UpdateProductVariant } from "../types/product";
+
+export const getProductProfile = async (productId: number): Promise<CompleteProduct | undefined> => {
+        const productResult = await pool.query(
+            'SELECT id, name, image_id, description, store_id, category_id FROM product WHERE id = $1',
+            [productId]
+        );
+        const variantResult = await pool.query(
+            'SELECT color, variant, price, stock_quantity, weight, dimension, is_available, sku FROM product_variant WHERE product_id = $1',
+            [productId]
+        );
+        return {
+            ...productResult.rows[0],
+            variant: variantResult.rows[0], 
+        };
+};
 
 export const createProduct = async (product: Product) => {
     const result = await pool.query(

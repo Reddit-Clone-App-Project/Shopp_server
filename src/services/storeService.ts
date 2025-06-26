@@ -99,7 +99,7 @@ export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoU
             'SELECT address_id FROM store WHERE id = $1', 
             [store.storeId]
         );
-        const address_id = result.rows[0]?.address_id;
+        const address_id: number = result.rows[0]?.address_id;
 
         if (address_id && store.address) {
         await client.query(
@@ -116,7 +116,7 @@ export const updateStoreProfile = async (store: StoreUpdate): Promise<StoreInfoU
             address_id
           ]
         );
-      }
+        }
         await client.query('COMMIT');
         const storeResult = await client.query(
             'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping FROM store WHERE id = $1',

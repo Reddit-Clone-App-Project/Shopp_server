@@ -1,9 +1,20 @@
 export type Product = {
+    id: number;
     name: string;
     image_id: number;
     description: string;
     store_id: number;
     category_id: number;
+}
+
+export type CompleteProduct = {
+    id: number;
+    name: string;
+    image_id: number;
+    description: string;
+    store_id: number;
+    category_id: number;
+    variant: ProductVariant;
 }
 
 export type UpdateProduct = {
