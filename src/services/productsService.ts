@@ -1,5 +1,5 @@
 import pool from "../config/db";
-import { CompleteProduct, Product, ProductImage, ProductVariant, UpdateProduct, UpdateProductImage, UpdateProductVariant } from "../types/product";
+import { CompleteProduct, Product, ProductImage, ProductVariant, UpdateProduct, UpdateProductImage, UpdateProductVariant, NewProduct } from "../types/product";
 
 export const getProductProfile = async (productId: number): Promise<CompleteProduct | undefined> => {
         const productResult = await pool.query(
@@ -16,7 +16,7 @@ export const getProductProfile = async (productId: number): Promise<CompleteProd
         };
 };
 
-export const createProduct = async (product: Product) => {
+export const createProduct = async (product: NewProduct): Promise<Product> => {
     const result = await pool.query(
         'INSERT INTO product (name, image_id, description, store_id, category_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, image_id, description, store_id, category_id',
         [product.name, product.image_id, product.description, product.store_id, product.category_id]

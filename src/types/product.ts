@@ -1,3 +1,11 @@
+export type NewProduct = {
+    name: string;
+    image_id: number;
+    description: string;
+    store_id: number;
+    category_id: number;
+}
+
 export type Product = {
     id: number;
     name: string;

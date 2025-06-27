@@ -8,25 +8,32 @@ export const getProductById = async (req: Request, res: Response) => {
 
     try {
         const product: CompleteProduct | undefined = await getProductProfile(productId);
-        if (product === undefined) {
-            res.status(404).json({error: 'Product not found!'})
+        if (!product) {
+            res.status(404).json({ error: 'Product not found!' });
+            return;
         };
-    } catch (err) {
 
+        res.status(200).json(product);
+
+    } catch (err) {
+        console.log('Error cannot get product profile', err);
+        res.status(500).json({ error: 'Error cannot get product profile' });
     };
 };
 
 export const createAProduct = async (req: Request, res: Response) => {
     const { name, image_id, description, store_id, category_id } = req.body;
-    const client = await pool.connect();
 
     try {
-        await client.query('BEGIN');
+        const newProduct: Product = await createProduct({name, image_id, description, store_id, category_id});
+        res.status(201).json(newProduct);
 
-    } catch (error) {
-        await client.query('ROLLBACK');
-    } finally {
-        client.release();
+    } catch (err) {
+        console.error('Error in the creation of the store:', err);
+        res.status(500).json({error: 'Error in the creation of the store'});
     };
-    
+};
+
+export const AddVariant = async (res: Response, req: Request) => {
+
 };
