@@ -29,16 +29,7 @@ export const registerStore = async (req: Request<{}, {}, StoreData>, res: Respon
 
         const address_id: number = await createAddress(address, client);
 
-        const newStore: StoreOutput = await createStore({
-            storeName,
-            storeEmail,
-            storePhone,
-            address,
-            expressShipping,
-            fastShipping,
-            economicalShipping,
-            bulkyShipping,
-        }, address_id, client);
+        const newStore: StoreOutput = await createStore(data, address_id, client);
 
         await createOwner({
             store_id: newStore.id,
@@ -52,9 +43,8 @@ export const registerStore = async (req: Request<{}, {}, StoreData>, res: Respon
     }catch (err) {
         await client.query('ROLLBACK');
         console.error('Error in the creation of the store:', err);
-        res.status(500).json({
-            error: 'Error in the creation of the store',
-        });
+        res.status(500).json({error: 'Error in the creation of the store'});
+        
     } finally {
         client.release();
     };
@@ -98,7 +88,6 @@ export const getStoreById = async ( req: Request, res: Response ) => {
 
 export const updateStore = async ( req: Request, res: Response ): Promise<void> => {
     const storeId = Number(req.params.id);
-    const data = req.body;
     const {
         storeName,
         storeProfile_img,
@@ -109,7 +98,7 @@ export const updateStore = async ( req: Request, res: Response ): Promise<void> 
         fastShipping,
         economicalShipping,
         bulkyShipping,
-    } = data;
+    } = req.body;
     
     try {
         if (req.user?.id === undefined) {
@@ -173,7 +162,7 @@ export const deleteStore = async ( req: Request, res: Response ) => {
             return;
         };
 
-        res.status(200).json('Store deleted successfully!');
+        res.status(200).json({ messagge: 'Store deleted successfully!' });
     } catch (err) {
         console.error("Error cannot delete store", err);
         res.status(500).json({ error: "Error cannot delete store" });
