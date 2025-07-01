@@ -29,6 +29,15 @@ export type UpdateProduct = {
     name: string;
     image_id: number;
     description: string;
+    store_id: number;
+    is_active: boolean;
+}
+
+export type UpdatedProduct = {
+    id: number;
+    name: string;
+    image_id: number;
+    description: string;
     is_active: boolean;
 }
 
@@ -40,7 +49,7 @@ export type ProductVariant = {
     stock_quantity: number;
     weight: number;
     dimension: number;
-    is_available: boolean;
+    is_active: boolean;
     sku: string;
 }
 
@@ -52,18 +61,17 @@ export type UpdateProductVariant = {
     stock_quantity: number;
     weight: number;
     dimension: number;
-    is_available: boolean;
+    is_active: boolean;
 }
 
-export type ProductImage = {
-    product_id: number;
+export type VariantImage = {
     variant_id: number;
     url: string;
     alt_text: string;
     position: number;
 }
 
-export type UpdateProductImage = {
+export type UpdateVariantImage = {
     variant_id: number;
     url: string;
     alt_text: string;

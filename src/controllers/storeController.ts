@@ -162,7 +162,7 @@ export const deleteStore = async ( req: Request, res: Response ) => {
             return;
         };
 
-        res.status(200).json('Store deleted successfully!');
+        res.status(200).json({ messagge: 'Store deleted successfully!' });
     } catch (err) {
         console.error("Error cannot delete store", err);
         res.status(500).json({ error: "Error cannot delete store" });
