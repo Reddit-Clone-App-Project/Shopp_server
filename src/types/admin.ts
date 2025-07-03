@@ -8,7 +8,8 @@ export type NewAdmin = {
     email: string;
     password: string;
     birthdate: string;
-}
+    role: 'normal' | 'super';
+};
 
 export type Admin = {
     fullname: string;

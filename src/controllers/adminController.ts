@@ -17,7 +17,7 @@ export const fetchUsers = async (req: Request, res: Response) => {
 };
 
 export const registerAdmin = async (req: Request, res: Response) => {
-  const { fullname, email, password, birthdate } = req.body;
+  const { fullname, email, password, birthdate, emp_role } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -26,6 +26,7 @@ export const registerAdmin = async (req: Request, res: Response) => {
       email,
       password: hashedPassword,
       birthdate,
+      role: emp_role || 'normal', // Default to 'normal' if not provided
     });
     res.status(201).json(newAdmin);
   } catch (err) {
