@@ -8,8 +8,8 @@ export const getAllUsers = async () => {
 
 export const createAdmin = async (admin: NewAdmin) => {
     const result = await pool.query(
-        'INSERT INTO admin (full_name, email, password, date_of_birth) VALUES ($1, $2, $3, $4) RETURNING id, full_name, email, date_of_birth',
-        [admin.fullname, admin.email, admin.password, admin.birthdate]
+        'INSERT INTO admin (full_name, email, password, date_of_birth, emp_role) VALUES ($1, $2, $3, $4, $5) RETURNING id, full_name, email, date_of_birth, emp_role',
+        [admin.fullname, admin.email, admin.password, admin.birthdate, admin.role]
     );
     return result.rows[0];
 };
