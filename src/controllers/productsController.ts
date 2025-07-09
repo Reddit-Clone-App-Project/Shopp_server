@@ -1,13 +1,30 @@
 import { Request, Response } from "express";
-import { CompleteProduct, Product, VariantImage, ProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant } from "../types/product";
-import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage } from "../services/productsService";
+import pool from '../config/db';
+// import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
+// import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
+import { Product } from "../types/product";
+import { getHotProducts, getProductProfile } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
+
+export const getHot = async (req: Request, res: Response) => {
+    const limit: number = Number(req.query.limit) || 20;
+    const offset: number = Number(req.query.offset) || 0;
+
+    try {
+        const products: Product[] = await getHotProducts(limit, offset);
+        res.status(200).json(products);
+    } catch (err) {
+        console.error('Error cannot get hot products', err);
+        res.status(500).json({ error: 'Error cannot get hot products' });
+    };
+
+}
 
 export const getProductById = async (req: Request, res: Response) => {
     const productId: number = Number(req.params.id);
 
     try {
-        const product: CompleteProduct | undefined = await getProductProfile(productId);
+        const product: Product | undefined = await getProductProfile(productId);
         if (!product) {
             res.status(404).json({ error: 'Product not found!' });
             return;
@@ -21,10 +38,13 @@ export const getProductById = async (req: Request, res: Response) => {
     };
 };
 
+/*
 export const createAProduct = async (req: Request, res: Response) => {
-    const { name, image_id, description, store_id, category_id } = req.body;
+    const { name, description, price, store_id, category_id, sku, images, variants} = req.body;
 
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         if (req.user?.id === undefined) {
             res.status(400).json({ error: 'User ID is required to update a store.' });
             return;
@@ -36,13 +56,22 @@ export const createAProduct = async (req: Request, res: Response) => {
             res.status(400).json({ error: 'You must be the owner of the store!'});
             return;
         };
+        // Create the product
+        const newProduct: BasicProduct = await createProduct({name, description, store_id, category_id});
+        
+        if(variants.length > 0){
+            await 
+        }
 
-        const newProduct: Product = await createProduct({name, image_id, description, store_id, category_id});
+        await client.query('COMMIT');
         res.status(201).json(newProduct);
-
+        
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Error in the creation of the store:', err);
         res.status(500).json({error: 'Error in the creation of the store'});
+    } finally {
+        client.release();
     };
 };
 
@@ -79,7 +108,7 @@ export const updateAProduct = async (req: Request, res: Response) => {
 };
 
 export const addVariant = async (req: Request, res: Response) => {
-    const data: ProductVariant = req.body;
+    const data: BasicProductVariant = req.body;
     const { product_id } = data;
     
     try {
@@ -304,3 +333,5 @@ export const deleteImage = async ( req: Request, res: Response ) => {
         res.status(500).json({ error: "Error cannot delete image" });
     };
 };
+
+*/
