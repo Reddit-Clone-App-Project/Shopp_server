@@ -61,9 +61,9 @@ export const getRatingStats = async (storeId: number): Promise<RatingStats> => {
 
 export const getRecentReviews = async (storeId: number, limit: number): Promise<Review[]> => {
     const result = await pool.query(
-        `SELECT r.id, r.user_id, r.rating, r.comment, u.fullname
+        `SELECT r.id, r.app_user_id, r.rating, r.comment, u.full_name
             FROM review r
-            JOIN app_user u ON r.user_id = u.id
+            JOIN app_user u ON r.app_user_id = u.id
             WHERE r.store_id = $1
             ORDER BY r.created_at DESC
             LIMIT $2`,

@@ -86,7 +86,7 @@ export interface RatingStats {
 export type StoreReviewList = Review[];
 export interface Review {
     id: number;
-    user_id: number;
+    app_user_id: number;
     rating: number;
     comment: string;
     fullname: string;
