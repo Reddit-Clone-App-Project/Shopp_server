@@ -29,3 +29,14 @@ export type UpdateUser = {
     nationality: string | null;
 }
 
+export type UserAddress = {
+    id: number;
+    full_name: string;
+    address_line_1: string;
+    address_line_2?: string;
+    city: string;
+    province: string;
+    postal_code: string;
+    country: string;
+    is_default: boolean;
+}

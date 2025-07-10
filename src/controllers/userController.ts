@@ -11,6 +11,7 @@ import {
   updateUserById,
   deleteUserById,
   getUserById,
+  getAddressByUserId
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -192,3 +193,28 @@ export const logoutUser = async (req: Request, res: Response) => {
       res.clearCookie('jwt', { httpOnly: true });
       res.status(200).json({ message: 'User logged out successfully' });
 }
+
+
+/*
+  ADDRESS
+*/
+
+export const getAddressById = async (req: Request, res: Response) => {
+  try {
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const address = await getAddressByUserId(req.user?.id);
+
+    if (!address) {
+      res.status(404).json({ error: "Address not found" });
+      return;
+    }
+
+    res.status(200).json(address);
+  } catch (err) {
+    console.error("Error cannot get user address", err);
+    res.status(500).json({ error: "Error cannot get user address" });
+  }
+};

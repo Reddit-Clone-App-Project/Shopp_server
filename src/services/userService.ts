@@ -1,5 +1,5 @@
 import pool from '../config/db';
-import { User, NewUser, UpdateUser } from '../types/users';
+import { User, NewUser, UpdateUser, UserAddress } from '../types/users';
 import validator  from 'validator';
 
 export const createUser = async (user: NewUser) => {
@@ -18,6 +18,14 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
     );
     return result.rows[0];
 };
+
+export const getAddressByUserId = async (userId: number): Promise<UserAddress | undefined> => {
+    const result = await pool.query(
+        'SELECT * FROM address WHERE app_user_id = $1 AND is_default = true',
+        [userId]
+    );
+    return result.rows[0];
+}
 
 export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
     const result = await pool.query(
@@ -38,7 +46,7 @@ export const deleteUserById = async (userId: number): Promise<number | null> => 
 
 
 /*
-!The functions below are deprecated and unnecessary, may be removed, or changed in the future
+!The functions below are deprecated(Code and types are updated, so if want to reuse this code, must look at it carefully) and unnecessary, may be removed, or changed in the future
 export const getUserByEOrP = async (eOrP: string): Promise<User | undefined> => {
     let result: any;
     if (validator.isEmail(eOrP)) {
