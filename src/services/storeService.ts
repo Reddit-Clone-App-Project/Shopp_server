@@ -34,7 +34,7 @@ export const getStores = async () => {
 
 export const getStoreProfile = async (storeId: number): Promise<StoreInfo | undefined> => {
     const result = await pool.query(
-        'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping FROM store WHERE id = $1',
+        'SELECT id, name, address_id, profile_img, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping, created_at FROM store WHERE id = $1',
         [storeId]
     );
     return result.rows[0];
@@ -61,7 +61,7 @@ export const getRatingStats = async (storeId: number): Promise<RatingStats> => {
 
 export const getRecentReviews = async (storeId: number, limit: number): Promise<Review[]> => {
     const result = await pool.query(
-        `SELECT r.id, r.app_user_id, r.rating, r.comment, u.full_name
+        `SELECT r.*, u.username, u.profile_img
             FROM review r
             JOIN app_user u ON r.app_user_id = u.id
             WHERE r.store_id = $1

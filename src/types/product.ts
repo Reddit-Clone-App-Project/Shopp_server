@@ -121,6 +121,8 @@ export interface Product {
     views: string;
     bought: number;
     sku: string;
+    total_reviews: number;
+    average_rating: number;
     store: Store | null;
     category_hierarchy: Category[] | null; // Show all categories associated with the product
     promotion_image: ProductImage | null;

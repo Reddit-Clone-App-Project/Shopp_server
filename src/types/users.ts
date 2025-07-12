@@ -10,6 +10,7 @@ export type NewUser = {
 
 export type User = {
   fullname: string;
+  username: string;
   email: string;
   phone_number: string;
   nationality: string | null;
