@@ -1,5 +1,5 @@
 import express from "express";
-import { registerStore, getStoreById, updateStore, deleteStore } from "../controllers/storeController";
+import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 
 const router = express.Router();
@@ -8,5 +8,12 @@ router.post('/', authenticateToken, registerStore);
 router.get('/:id', getStoreById);
 router.put('/:id', authenticateToken, updateStore);
 router.delete('/:id', authenticateToken, deleteStore);
+
+// Store products
+router.get('/:id/products', getStoreProductsBought);
+router.get('/:id/products/hot', getStoreHotProducts);
+
+// Discount routes
+router.get('/:id/discounts', getStoreDiscounts);
 
 export default router;

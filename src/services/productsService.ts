@@ -1,5 +1,6 @@
 import pool from "../config/db";
 import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct } from "../types/product";
+import { Review } from "../types/store";
 
 // This service get products for the home page
 export const getHotProducts = async (limit: number = 20, offset: number = 0): Promise<Product[]> => {
@@ -14,6 +15,15 @@ export const getHotProducts = async (limit: number = 20, offset: number = 0): Pr
             p.views,
             p.bought,
             p.sku,
+            p.total_reviews,
+            p.average_rating,
+            p.stars_5,
+            p.stars_4,
+            p.stars_3,
+            p.stars_2,
+            p.stars_1,
+            p.have_comment,
+            p.have_image,
             json_build_object(
                 'id', s.id,
                 'name', s.name,
@@ -52,7 +62,7 @@ export const getHotProducts = async (limit: number = 20, offset: number = 0): Pr
                                     json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at))
                                 FROM public.discount d
                                 JOIN public.product_discount pd ON d.id = pd.discount_id
-                                WHERE (pd.product_variant_id = pv.id OR pd.product_id = p.id) AND d.is_active = true AND d.status = 'active'
+                                WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
                             )
                         )
                     )
@@ -119,6 +129,15 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
             p.views,
             p.bought,
             p.sku,
+            p.total_reviews,
+            p.average_rating,
+            p.stars_5,
+            p.stars_4,
+            p.stars_3,
+            p.stars_2,
+            p.stars_1,
+            p.have_comment,
+            p.have_image,
             json_build_object(
                 'id', s.id,
                 'name', s.name,
@@ -157,7 +176,7 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
                                     json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at))
                                 FROM public.discount d
                                 JOIN public.product_discount pd ON d.id = pd.discount_id
-                                WHERE (pd.product_variant_id = pv.id OR pd.product_id = p.id) AND d.is_active = true AND d.status = 'active'
+                                WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
                             )
                         )
                     )
@@ -300,3 +319,36 @@ export const deleteVariantImage = async (imageId: number): Promise<number | null
     );
     return result.rowCount;
 };
+
+// Rating and review
+export const getReviews = async (productId: number, limit: number = 25, offset: number = 0): Promise<Review[]> => {
+    const result = await pool.query(
+        `SELECT review.*, app_user.username, app_user.profile_img FROM review JOIN app_user ON review.app_user_id = app_user.id WHERE review.product_id = $1 ORDER BY review.created_at DESC LIMIT $2 OFFSET $3`,
+        [productId, limit, offset]
+    );
+    return result.rows;
+}
+
+export const getReviewsByStar = async (productId: number, limit: number = 25, offset:number = 0, rating: number): Promise<Review[]> => {
+    const result = await pool.query(
+        `SELECT review.*, app_user.username, app_user.profile_img FROM review JOIN app_user ON review.app_user_id = app_user.id WHERE review.product_id = $1 AND review.rating = $2 ORDER BY review.created_at DESC LIMIT $3 OFFSET $4`,
+        [productId, rating, limit, offset]
+    );
+    return result.rows;
+}
+
+export const getReviewsThatHaveComment = async (productId: number, limit: number = 25, offset: number = 0): Promise<Review[]> => {
+    const result = await pool.query(
+        `SELECT review.*, app_user.username, app_user.profile_img FROM review JOIN app_user ON review.app_user_id = app_user.id WHERE review.product_id = $1 AND review.comment IS NOT NULL ORDER BY review.created_at DESC LIMIT $2 OFFSET $3`,
+        [productId, limit, offset]
+    );
+    return result.rows;
+}
+
+export const getReviewsThatHaveImage = async (productId: number, limit: number = 25, offset: number = 0): Promise<Review[]> => {
+    const result = await pool.query(
+        `SELECT review.*, app_user.username, app_user.profile_img FROM review JOIN app_user ON review.app_user_id = app_user.id WHERE review.product_id = $1 AND review.img_url IS NOT NULL ORDER BY review.created_at DESC LIMIT $2 OFFSET $3`,
+        [productId, limit, offset]
+    );
+    return result.rows;
+}

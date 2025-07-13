@@ -89,7 +89,9 @@ interface Category {
 interface Discount {
     id: number;
     name: string;
-    discount_type: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_where: 'product' | 'category' | 'shipping' | 'other';
+    discount_scope: 'forced' | 'optional';
     discount_value: string;
     start_at: Date;
     end_at: Date;
@@ -121,6 +123,8 @@ export interface Product {
     views: string;
     bought: number;
     sku: string;
+    total_reviews: number;
+    average_rating: number;
     store: Store | null;
     category_hierarchy: Category[] | null; // Show all categories associated with the product
     promotion_image: ProductImage | null;

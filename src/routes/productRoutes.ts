@@ -1,6 +1,6 @@
 import express from "express";
 // import { addVariant, addVariantImage, createAProduct, deleteImage, deleteProductProfile, deleteVariantProfile, getHot, getProductById, updateAProduct, updateVariant, updateVariantImage } from "../controllers/productsController";
-import { getHot, getProductById } from "../controllers/productsController";
+import { getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage } from "../controllers/productsController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authorizeRole } from "../middlewares/authorizationRole";
 
@@ -19,4 +19,11 @@ router.delete('/:id', authenticateToken, authorizeRole(['seller', 'admin']), del
 router.delete('/variant/:id', authenticateToken, authorizeRole(['seller', 'admin']), deleteVariantProfile);
 router.delete('/variant/image/:id', authenticateToken, authorizeRole(['seller', 'admin']), deleteImage);
 */
+
+// !Review
+router.get('/:id/reviews', getProductReviews);
+router.get('/:id/reviews/rating/:rating', getProductReviewsByStar);
+router.get('/:id/reviews/comment', getProductReviewsHaveComment);
+router.get('/:id/reviews/image', getProductReviewsHaveImage);
+
 export default router;
