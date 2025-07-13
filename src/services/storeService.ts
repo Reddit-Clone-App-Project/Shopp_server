@@ -1,4 +1,5 @@
 import pool from "../config/db";
+import { Product } from "../types/product";
 import { StoreData, StoreAddress, StoreOwner, StoreInfo, RatingStats, Review, StoreUpdate, StoreInfoUpdate } from "../types/store";
 import { PoolClient } from "pg";
 
@@ -146,6 +147,237 @@ export const deleteStoreProfile = async (storeId: number): Promise<number | null
     return result.rowCount;
 };
 
+// Product
+export const getStoreTrendingProducts = async (storeId: number, limit: number = 4, offset: number=0): Promise<Product[]> => {
+    const query = `
+        SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.created_at,
+            p.updated_at,
+            p.is_published,
+            p.views,
+            p.bought,
+            p.sku,
+            p.total_reviews,
+            p.average_rating,
+            p.stars_5,
+            p.stars_4,
+            p.stars_3,
+            p.stars_2,
+            p.stars_1,
+            p.have_comment,
+            p.have_image,
+            json_build_object(
+                'id', s.id,
+                'name', s.name,
+                'profile_img', s.profile_img
+            ) AS store,
+            -- UPDATED: Category Hierarchy (as a JSON array)
+            ch.category_hierarchy,
+            (
+                SELECT
+                    json_build_object(
+                        'id', pi_promo.id,
+                        'url', pi_promo.url,
+                        'alt_text', pi_promo.alt_text
+                    )
+                FROM public.product_image pi_promo
+                WHERE pi_promo.product_id = p.id AND pi_promo.is_promotion_image = true
+                LIMIT 1
+            ) AS promotion_image,
+            (
+                SELECT
+                    json_agg(
+                        json_build_object(
+                            'id', pv.id,
+                            'variant_name', pv.variant_name,
+                            'price', pv.price,
+                            'stock_quantity', pv.stock_quantity,
+                            'sku', pv.sku,
+                            'images', (
+                                SELECT
+                                    json_agg(json_build_object('id', pi_variant.id, 'url', pi_variant.url, 'alt_text', pi_variant.alt_text))
+                                FROM public.product_image pi_variant
+                                WHERE pi_variant.product_variant_id = pv.id
+                            ),
+                            'discounts', (
+                                SELECT
+                                    json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at))
+                                FROM public.discount d
+                                JOIN public.product_discount pd ON d.id = pd.discount_id
+                                WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
+                            )
+                        )
+                    )
+                FROM public.product_variant pv
+                WHERE pv.product_id = p.id
+            ) AS variants,
+            (
+                SELECT
+                    json_agg(json_build_object('id', pi_product.id, 'url', pi_product.url, 'alt_text', pi_product.alt_text))
+                FROM public.product_image pi_product
+                WHERE pi_product.product_id = p.id
+                  AND pi_product.product_variant_id IS NULL
+                  AND pi_product.is_promotion_image = false
+            ) AS product_images
+        FROM
+            public.product p
+        LEFT JOIN public.store s ON p.store_id = s.id
+        -- UPDATED: Using LEFT JOIN LATERAL to run a recursive query for each product's category
+        LEFT JOIN LATERAL (
+            WITH RECURSIVE category_path AS (
+                -- Anchor: The product's direct category
+                SELECT id, name, slug, parent_id, 0 as level
+                FROM public.category
+                WHERE id = p.category_id
+
+                UNION ALL
+
+                -- Recursive Member: The parent of the previous category
+                SELECT c_parent.id, c_parent.name, c_parent.slug, c_parent.parent_id, cp.level + 1
+                FROM public.category c_parent
+                JOIN category_path cp ON c_parent.id = cp.parent_id
+            )
+            -- Aggregate the entire path into a single JSON array, ordered by level
+            SELECT json_agg(
+                       json_build_object(
+                           'id', id,
+                           'name', name,
+                           'slug', slug
+                       ) ORDER BY level ASC
+                   ) AS category_hierarchy
+            FROM category_path
+        ) ch ON true
+        WHERE
+            p.is_active = true
+            AND p.store_id = $1
+        ORDER BY
+            p.views DESC
+        LIMIT $2
+        OFFSET $3;
+    `;
+
+    const result = await pool.query(query, [storeId, limit, offset]);
+    return result.rows;
+};
+
+export const getStoreProducts = async (storeId: number, limit: number = 5, offset: number = 0): Promise<Product[]> => {
+    const query = `
+        SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.created_at,
+            p.updated_at,
+            p.is_published,
+            p.views,
+            p.bought,
+            p.sku,
+            p.total_reviews,
+            p.average_rating,
+            p.stars_5,
+            p.stars_4,
+            p.stars_3,
+            p.stars_2,
+            p.stars_1,
+            p.have_comment,
+            p.have_image,
+            json_build_object(
+                'id', s.id,
+                'name', s.name,
+                'profile_img', s.profile_img
+            ) AS store,
+            -- UPDATED: Category Hierarchy (as a JSON array)
+            ch.category_hierarchy,
+            (
+                SELECT
+                    json_build_object(
+                        'id', pi_promo.id,
+                        'url', pi_promo.url,
+                        'alt_text', pi_promo.alt_text
+                    )
+                FROM public.product_image pi_promo
+                WHERE pi_promo.product_id = p.id AND pi_promo.is_promotion_image = true
+                LIMIT 1
+            ) AS promotion_image,
+            (
+                SELECT
+                    json_agg(
+                        json_build_object(
+                            'id', pv.id,
+                            'variant_name', pv.variant_name,
+                            'price', pv.price,
+                            'stock_quantity', pv.stock_quantity,
+                            'sku', pv.sku,
+                            'images', (
+                                SELECT
+                                    json_agg(json_build_object('id', pi_variant.id, 'url', pi_variant.url, 'alt_text', pi_variant.alt_text))
+                                FROM public.product_image pi_variant
+                                WHERE pi_variant.product_variant_id = pv.id
+                            ),
+                            'discounts', (
+                                SELECT
+                                    json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at))
+                                FROM public.discount d
+                                JOIN public.product_discount pd ON d.id = pd.discount_id
+                                WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
+                            )
+                        )
+                    )
+                FROM public.product_variant pv
+                WHERE pv.product_id = p.id
+            ) AS variants,
+            (
+                SELECT
+                    json_agg(json_build_object('id', pi_product.id, 'url', pi_product.url, 'alt_text', pi_product.alt_text))
+                FROM public.product_image pi_product
+                WHERE pi_product.product_id = p.id
+                  AND pi_product.product_variant_id IS NULL
+                  AND pi_product.is_promotion_image = false
+            ) AS product_images
+        FROM
+            public.product p
+        LEFT JOIN public.store s ON p.store_id = s.id
+        -- UPDATED: Using LEFT JOIN LATERAL to run a recursive query for each product's category
+        LEFT JOIN LATERAL (
+            WITH RECURSIVE category_path AS (
+                -- Anchor: The product's direct category
+                SELECT id, name, slug, parent_id, 0 as level
+                FROM public.category
+                WHERE id = p.category_id
+
+                UNION ALL
+
+                -- Recursive Member: The parent of the previous category
+                SELECT c_parent.id, c_parent.name, c_parent.slug, c_parent.parent_id, cp.level + 1
+                FROM public.category c_parent
+                JOIN category_path cp ON c_parent.id = cp.parent_id
+            )
+            -- Aggregate the entire path into a single JSON array, ordered by level
+            SELECT json_agg(
+                       json_build_object(
+                           'id', id,
+                           'name', name,
+                           'slug', slug
+                       ) ORDER BY level ASC
+                   ) AS category_hierarchy
+            FROM category_path
+        ) ch ON true
+        WHERE
+            p.is_active = true
+            AND p.store_id = $1
+        ORDER BY
+            p.bought DESC
+        LIMIT $2
+        OFFSET $3;
+    `;
+
+    const result = await pool.query(query, [storeId, limit, offset]);
+    return result.rows;
+};
+
 // Discount for store
 export const getDiscountsByStoreId = async (storeId: number) => {
     const result = await pool.query(
@@ -154,3 +386,4 @@ export const getDiscountsByStoreId = async (storeId: number) => {
     );
     return result.rows;
 }
+
