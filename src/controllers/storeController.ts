@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId } from "../services/storeService";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -168,3 +168,15 @@ export const deleteStore = async ( req: Request, res: Response ) => {
         res.status(500).json({ error: "Error cannot delete store" });
     };
 };
+
+export const getStoreDiscounts = async ( req: Request, res: Response ) => {
+    const storeId = Number(req.params.id);
+
+    try {
+        const discounts = await getDiscountsByStoreId(storeId);
+        res.status(200).json(discounts);
+    } catch (err) {
+        console.error("Error cannot get store discounts", err);
+        res.status(500).json({ error: "Error cannot get store discounts" });
+    };
+}

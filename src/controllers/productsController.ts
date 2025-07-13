@@ -3,7 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar } from "../services/productsService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
 export const getHot = async (req: Request, res: Response) => {
@@ -363,5 +363,33 @@ export const getProductReviewsByStar = async (req: Request, res: Response) => {
     } catch (err) {
         console.error("Error fetching product reviews by star", err);
         res.status(500).json({ error: "Error fetching product reviews by star" });
+    }
+};
+
+export const getProductReviewsHaveComment = async (req: Request, res: Response) => {
+    const productId: number = Number(req.params.id);
+    const limit: number = Number(req.query.limit) || 25;
+    const offset: number = Number(req.query.offset) || 0;
+
+    try {
+        const reviews = await getReviewsThatHaveComment(productId, limit, offset);
+        res.status(200).json(reviews);
+    } catch (err) {
+        console.error("Error fetching product reviews with comments", err);
+        res.status(500).json({ error: "Error fetching product reviews with comments" });
+    }
+};
+
+export const getProductReviewsHaveImage = async (req: Request, res: Response) => {
+    const productId: number = Number(req.params.id);
+    const limit: number = Number(req.query.limit) || 25;
+    const offset: number = Number(req.query.offset) || 0;
+
+    try {
+        const reviews = await getReviewsThatHaveImage(productId, limit, offset);
+        res.status(200).json(reviews);
+    } catch (err) {
+        console.error("Error fetching product reviews with images", err);
+        res.status(500).json({ error: "Error fetching product reviews with images" });
     }
 };

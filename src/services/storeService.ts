@@ -145,3 +145,12 @@ export const deleteStoreProfile = async (storeId: number): Promise<number | null
     );
     return result.rowCount;
 };
+
+// Discount for store
+export const getDiscountsByStoreId = async (storeId: number) => {
+    const result = await pool.query(
+        "SELECT id, name, discount_type, discount_value, description, start_at, end_at FROM discount WHERE store_id = $1 AND discount_where = 'other' AND scope = 'optional' AND status = 'active'",
+        [storeId]
+    );
+    return result.rows;
+}

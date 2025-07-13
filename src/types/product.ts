@@ -89,7 +89,9 @@ interface Category {
 interface Discount {
     id: number;
     name: string;
-    discount_type: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_where: 'product' | 'category' | 'shipping' | 'other';
+    discount_scope: 'forced' | 'optional';
     discount_value: string;
     start_at: Date;
     end_at: Date;
