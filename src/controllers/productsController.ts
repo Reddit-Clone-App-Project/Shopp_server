@@ -396,7 +396,7 @@ export const getProductReviewsHaveImage = async (req: Request, res: Response) =>
 
 export const searchForProducts = async (req: Request, res: Response): Promise<void> => {
     const query = req.query.q as string;
-    const limit: number = Number(req.query.limit) || 20;
+    const limit: number = Number(req.query.limit) || 60;
     const offset: number = Number(req.query.offset) || 0;
 
     if (!query) {

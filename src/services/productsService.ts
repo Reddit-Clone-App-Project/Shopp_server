@@ -354,7 +354,7 @@ export const getReviewsThatHaveImage = async (productId: number, limit: number =
 }
 
 // Search products API
-export const searchProducts = async (searchTerm: string, limit: number = 20, offset: number = 0): Promise<Product[]> => {
+export const searchProducts = async (searchTerm: string, limit: number = 60, offset: number = 0): Promise<Product[]> => {
     // This query now includes all the detailed columns you requested
     const query = `
         SELECT
