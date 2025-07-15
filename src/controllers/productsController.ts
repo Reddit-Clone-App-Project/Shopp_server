@@ -3,7 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage } from "../services/productsService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
 export const getHot = async (req: Request, res: Response) => {
@@ -391,5 +391,25 @@ export const getProductReviewsHaveImage = async (req: Request, res: Response) =>
     } catch (err) {
         console.error("Error fetching product reviews with images", err);
         res.status(500).json({ error: "Error fetching product reviews with images" });
+    }
+};
+
+export const searchForProducts = async (req: Request, res: Response): Promise<void> => {
+    const query = req.query.q as string;
+    const limit: number = Number(req.query.limit) || 20;
+    const offset: number = Number(req.query.offset) || 0;
+
+    if (!query) {
+        // Use return to exit the function early
+        res.status(400).json({ error: 'Search query is required' });
+        return; 
+    }
+
+    try {
+        const products: Product[] = await searchProducts(query, limit, offset);
+        res.status(200).json(products);
+    } catch (err) {
+        console.error('Error searching for products', err);
+        res.status(500).json({ error: 'Error searching for products' });
     }
 };

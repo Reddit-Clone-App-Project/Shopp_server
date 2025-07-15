@@ -1,12 +1,19 @@
 import express from "express";
 // import { addVariant, addVariantImage, createAProduct, deleteImage, deleteProductProfile, deleteVariantProfile, getHot, getProductById, updateAProduct, updateVariant, updateVariantImage } from "../controllers/productsController";
-import { getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage } from "../controllers/productsController";
+import { getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authorizeRole } from "../middlewares/authorizationRole";
 
 const router = express.Router();
 
+// Search
+router.get('/search', searchForProducts);
+
+
 router.get('/hot', getHot);
+
+
+
 router.get('/:id', getProductById);
 /*
 router.post('/create', authenticateToken, authorizeRole(['seller', 'admin']), createAProduct);
@@ -25,5 +32,6 @@ router.get('/:id/reviews', getProductReviews);
 router.get('/:id/reviews/rating/:rating', getProductReviewsByStar);
 router.get('/:id/reviews/comment', getProductReviewsHaveComment);
 router.get('/:id/reviews/image', getProductReviewsHaveImage);
+
 
 export default router;
