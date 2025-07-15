@@ -7,6 +7,9 @@ import {
   updateCategory,
   deleteCategory
 } from "../services/categoryService";
+import { searchProductsByCategory } from "../services/categoryService";
+
+import { Product } from "../types/product";
 
 export const getActiveCategories = async (req: Request, res: Response) => {
   try {
@@ -95,5 +98,24 @@ export const deleteACategory = async (req: Request, res: Response) => {
     }catch (error) {
         console.error("Error deleting category:", error);
         res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+export const getProductsByCategory = async (req: Request, res: Response): Promise<void> => {
+    const categoryId: number = Number(req.params.categoryId);
+    const limit: number = Number(req.query.limit) || 20;
+    const offset: number = Number(req.query.offset) || 0;
+
+    if (isNaN(categoryId) || categoryId <= 0) {
+        res.status(400).json({ error: 'Invalid category ID' });
+        return;
+    }
+
+    try {
+        const products: Product[] = await searchProductsByCategory(categoryId, limit, offset);
+        res.status(200).json(products);
+    } catch (err) {
+        console.error('Error fetching products by category', err);
+        res.status(500).json({ error: 'Error fetching products by category' });
     }
 }
