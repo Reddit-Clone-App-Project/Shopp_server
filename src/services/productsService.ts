@@ -355,6 +355,7 @@ export const getReviewsThatHaveImage = async (productId: number, limit: number =
 
 // Search products API
 export const searchProducts = async (searchTerm: string, limit: number = 20, offset: number = 0): Promise<Product[]> => {
+    // This query now includes all the detailed columns you requested
     const query = `
         SELECT
             p.id,
@@ -400,13 +401,33 @@ export const searchProducts = async (searchTerm: string, limit: number = 20, off
                             'variant_name', pv.variant_name,
                             'price', pv.price,
                             'stock_quantity', pv.stock_quantity,
-                            'sku', pv.sku
-                            -- You can add images and discounts here if needed
+                            'sku', pv.sku,
+                            'images', (
+                                SELECT
+                                    json_agg(json_build_object('id', pi_variant.id, 'url', pi_variant.url, 'alt_text', pi_variant.alt_text))
+                                FROM public.product_image pi_variant
+                                WHERE pi_variant.product_variant_id = pv.id
+                            ),
+                            'discounts', (
+                                SELECT
+                                    json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at))
+                                FROM public.discount d
+                                JOIN public.product_discount pd ON d.id = pd.discount_id
+                                WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
+                            )
                         )
                     )
                 FROM public.product_variant pv
                 WHERE pv.product_id = p.id
-            ) AS variants
+            ) AS variants,
+            (
+                SELECT
+                    json_agg(json_build_object('id', pi_product.id, 'url', pi_product.url, 'alt_text', pi_product.alt_text))
+                FROM public.product_image pi_product
+                WHERE pi_product.product_id = p.id
+                  AND pi_product.product_variant_id IS NULL
+                  AND pi_product.is_promotion_image = false
+            ) AS product_images
         FROM
             public.product p
         LEFT JOIN public.store s ON p.store_id = s.id
@@ -420,11 +441,17 @@ export const searchProducts = async (searchTerm: string, limit: number = 20, off
                 FROM public.category c_parent
                 JOIN category_path cp ON c_parent.id = cp.parent_id
             )
-            SELECT json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY level ASC) AS category_hierarchy
+            SELECT json_agg(
+                json_build_object(
+                    'id', id,
+                    'name', name,
+                    'slug', slug
+                ) ORDER BY level ASC
+            ) AS category_hierarchy
             FROM category_path
         ) ch ON true
         WHERE
-            p.fts @@ websearch_to_tsquery('english', $1)
+            p.fts @@ websearch_to_tsquery('english', $1) AND p.is_active = true
         ORDER BY
             ts_rank(p.fts, websearch_to_tsquery('english', $1)) DESC
         LIMIT $2
