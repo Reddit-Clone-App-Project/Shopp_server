@@ -413,3 +413,5 @@ export const searchForProducts = async (req: Request, res: Response): Promise<vo
         res.status(500).json({ error: 'Error searching for products' });
     }
 };
+
+
