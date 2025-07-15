@@ -1,12 +1,13 @@
 import express from "express";
 // import { addVariant, addVariantImage, createAProduct, deleteImage, deleteProductProfile, deleteVariantProfile, getHot, getProductById, updateAProduct, updateVariant, updateVariantImage } from "../controllers/productsController";
-import { getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
+import { fetchSuggestions, getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authorizeRole } from "../middlewares/authorizationRole";
 
 const router = express.Router();
 
 // Search
+router.get('/suggestions', fetchSuggestions);
 router.get('/search', searchForProducts);
 
 

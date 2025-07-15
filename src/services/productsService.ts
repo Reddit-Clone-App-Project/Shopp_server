@@ -354,7 +354,7 @@ export const getReviewsThatHaveImage = async (productId: number, limit: number =
 }
 
 // Search products API
-export const searchProducts = async (searchTerm: string, limit: number = 20, offset: number = 0): Promise<Product[]> => {
+export const searchProducts = async (searchTerm: string, limit: number = 60, offset: number = 0): Promise<Product[]> => {
     // This query now includes all the detailed columns you requested
     const query = `
         SELECT
@@ -460,4 +460,17 @@ export const searchProducts = async (searchTerm: string, limit: number = 20, off
 
     const result = await pool.query(query, [searchTerm, limit, offset]);
     return result.rows;
+};
+
+export const getSearchSuggestions = async (prefix: string, limit: number = 10): Promise<string[]> => {
+    const query = `
+        SELECT DISTINCT name
+        FROM product
+        WHERE name ILIKE $1 -- Use ILIKE for a case-insensitive search
+        LIMIT $2;
+    `;
+    
+    const result = await pool.query(query, [prefix + '%', limit]);
+    
+    return result.rows.map(row => row.name);
 };

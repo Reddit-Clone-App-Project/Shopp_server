@@ -3,7 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts } from "../services/productsService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
 export const getHot = async (req: Request, res: Response) => {
@@ -396,7 +396,7 @@ export const getProductReviewsHaveImage = async (req: Request, res: Response) =>
 
 export const searchForProducts = async (req: Request, res: Response): Promise<void> => {
     const query = req.query.q as string;
-    const limit: number = Number(req.query.limit) || 20;
+    const limit: number = Number(req.query.limit) || 60;
     const offset: number = Number(req.query.offset) || 0;
 
     if (!query) {
@@ -415,3 +415,20 @@ export const searchForProducts = async (req: Request, res: Response): Promise<vo
 };
 
 
+export const fetchSuggestions = async (req: Request, res: Response): Promise<void> => {
+    const prefix = req.query.q as string;
+
+    if (!prefix) {
+        // Return an empty array if there's no query
+        res.json([]);
+        return;
+    }
+
+    try {
+        const suggestions = await getSearchSuggestions(prefix);
+        res.json(suggestions);
+    } catch (err) {
+        console.error("Error fetching suggestions", err);
+        res.status(500).json({ error: "Could not fetch suggestions" });
+    }
+};
