@@ -395,18 +395,22 @@ export const getProductReviewsHaveImage = async (req: Request, res: Response) =>
 };
 
 export const searchForProducts = async (req: Request, res: Response): Promise<void> => {
-    const query = req.query.q as string;
+    const searchTerm = req.query.q as string;
     const limit: number = Number(req.query.limit) || 60;
     const offset: number = Number(req.query.offset) || 0;
+    const sortBy = req.query.sortBy as string || 'relevance';
+    const minPrice = parseFloat(req.query.minPrice as string) || undefined;
+    const maxPrice = parseFloat(req.query.maxPrice as string) || undefined;
+    const rating = parseInt(req.query.rating as string) || undefined;
 
-    if (!query) {
+    if (!searchTerm) {
         // Use return to exit the function early
         res.status(400).json({ error: 'Search query is required' });
         return; 
     }
 
     try {
-        const products: Product[] = await searchProducts(query, limit, offset);
+        const products: Product[] = await searchProducts({searchTerm, limit, offset, sortBy, minPrice, maxPrice, rating});
         res.status(200).json(products);
     } catch (err) {
         console.error('Error searching for products', err);

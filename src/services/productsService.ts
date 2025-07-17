@@ -14,7 +14,6 @@ export const getHotProducts = async (limit: number = 20, offset: number = 0): Pr
             p.is_published,
             p.views,
             p.bought,
-            p.sku,
             p.total_reviews,
             p.average_rating,
             p.stars_5,
@@ -128,7 +127,6 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
             p.is_published,
             p.views,
             p.bought,
-            p.sku,
             p.total_reviews,
             p.average_rating,
             p.stars_5,
@@ -354,6 +352,125 @@ export const getReviewsThatHaveImage = async (productId: number, limit: number =
 }
 
 // Search products API
+interface SearchOptions {
+  searchTerm: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number;
+}
+
+export const searchProducts = async (options: SearchOptions): Promise<Product[]> => {
+  const {
+    searchTerm,
+    limit = 20,
+    offset = 0,
+    sortBy = 'Relevance',
+    minPrice,
+    maxPrice,
+    rating,
+  } = options;
+
+  const params: any[] = [];
+  let paramIndex = 1;
+
+  // Base query with all the JSON building
+  let query = `
+    SELECT
+      p.id, p.name, p.description, p.created_at, p.updated_at, p.is_published,
+      p.views, p.bought, p.total_reviews, p.average_rating, p.stars_5, p.stars_4,
+      p.stars_3, p.stars_2, p.stars_1, p.have_comment, p.have_image,
+      json_build_object('id', s.id, 'name', s.name, 'profile_img', s.profile_img) AS store,
+      ch.category_hierarchy,
+      (SELECT json_build_object('id', pi_promo.id, 'url', pi_promo.url, 'alt_text', pi_promo.alt_text)
+       FROM public.product_image pi_promo WHERE pi_promo.product_id = p.id AND pi_promo.is_promotion_image = true LIMIT 1) AS promotion_image,
+      (SELECT json_agg(json_build_object('id', pv.id, 'variant_name', pv.variant_name, 'price', pv.price, 'stock_quantity', pv.stock_quantity, 'sku', pv.sku,
+        'images', (SELECT json_agg(json_build_object('id', pi.id, 'url', pi.url, 'alt_text', pi.alt_text)) FROM public.product_image pi WHERE pi.product_variant_id = pv.id),
+        'discounts', (SELECT json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at)) FROM public.discount d JOIN public.product_discount pd ON d.id = pd.discount_id WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product')))
+       FROM public.product_variant pv WHERE pv.product_id = p.id) AS variants,
+      (SELECT json_agg(json_build_object('id', pi.id, 'url', pi.url, 'alt_text', pi.alt_text))
+       FROM public.product_image pi WHERE pi.product_id = p.id AND pi.product_variant_id IS NULL AND pi.is_promotion_image = false) AS product_images
+    FROM public.product p
+    LEFT JOIN public.store s ON p.store_id = s.id
+    LEFT JOIN LATERAL (
+        WITH RECURSIVE category_path AS (
+            SELECT id, name, slug, parent_id, 0 as level FROM public.category WHERE id = p.category_id
+            UNION ALL
+            SELECT c.id, c.name, c.slug, c.parent_id, cp.level + 1 FROM public.category c JOIN category_path cp ON c.id = cp.parent_id
+        )
+        SELECT json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY level ASC) AS category_hierarchy
+        FROM category_path
+    ) ch ON true
+  `;
+
+  // === Dynamic WHERE Clause ===
+  const whereClauses: string[] = [];
+  
+  // 1. Full-text search is always active
+  whereClauses.push(`p.fts @@ websearch_to_tsquery('english', $${paramIndex++})`);
+  params.push(searchTerm);
+  whereClauses.push(`p.is_active = true`);
+
+  // 2. Add rating filter if provided
+  if (rating) {
+    whereClauses.push(`p.average_rating >= $${paramIndex++}`);
+    params.push(rating);
+  }
+
+  // 3. Add price filter if provided
+  // This uses an EXISTS subquery to check if any variant matches the price range.
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    const priceConditions: string[] = [];
+    if (minPrice !== undefined) {
+        priceConditions.push(`pv.price >= $${paramIndex++}`);
+        params.push(minPrice);
+    }
+    if (maxPrice !== undefined) {
+        priceConditions.push(`pv.price <= $${paramIndex++}`);
+        params.push(maxPrice);
+    }
+    whereClauses.push(`EXISTS (SELECT 1 FROM public.product_variant pv WHERE pv.product_id = p.id AND ${priceConditions.join(' AND ')})`);
+  }
+
+  query += ` WHERE ${whereClauses.join(' AND ')}`;
+
+  // === Dynamic ORDER BY Clause ===
+  let orderByClause = '';
+  switch (sortBy) {
+    case 'Newest':
+      orderByClause = 'ORDER BY p.created_at DESC';
+      break;
+    case 'Most Bought':
+      orderByClause = 'ORDER BY p.bought DESC';
+      break;
+    case 'Price: Low to High':
+      // Sorts by the minimum price of a product's variants
+      orderByClause = `ORDER BY (SELECT MIN(price) FROM public.product_variant WHERE product_id = p.id) ASC NULLS LAST`;
+      break;
+    case 'Price: High to Low':
+      // Sorts by the minimum price of a product's variants
+      orderByClause = `ORDER BY (SELECT MIN(price) FROM public.product_variant WHERE product_id = p.id) DESC NULLS LAST`;
+      break;
+    case 'Relevance':
+    default:
+      // Uses the first parameter ($1), which is always the searchTerm
+      orderByClause = `ORDER BY ts_rank(p.fts, websearch_to_tsquery('english', $1)) DESC`;
+      break;
+  }
+  query += ` ${orderByClause}`;
+
+  // === Pagination ===
+  query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+  params.push(limit, offset);
+
+  // Execute the final, dynamically built query
+  const result = await pool.query(query, params);
+  return result.rows;
+};
+
+/*
 export const searchProducts = async (searchTerm: string, limit: number = 60, offset: number = 0): Promise<Product[]> => {
     // This query now includes all the detailed columns you requested
     const query = `
@@ -366,7 +483,6 @@ export const searchProducts = async (searchTerm: string, limit: number = 60, off
             p.is_published,
             p.views,
             p.bought,
-            p.sku,
             p.total_reviews,
             p.average_rating,
             p.stars_5,
@@ -461,6 +577,7 @@ export const searchProducts = async (searchTerm: string, limit: number = 60, off
     const result = await pool.query(query, [searchTerm, limit, offset]);
     return result.rows;
 };
+*/
 
 export const getSearchSuggestions = async (prefix: string, limit: number = 10): Promise<string[]> => {
     const query = `
