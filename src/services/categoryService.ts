@@ -54,7 +54,6 @@ export const searchProductsByCategory = async (categoryId: number, limit: number
             p.is_published,
             p.views,
             p.bought,
-            p.sku,
             p.total_reviews,
             p.average_rating,
             p.stars_5,
