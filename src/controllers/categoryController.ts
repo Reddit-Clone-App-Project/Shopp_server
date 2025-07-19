@@ -5,7 +5,7 @@ import {
   createACategory,
   getAllCategories,
   updateCategory,
-  deleteCategory
+  deleteCategory,
 } from "../services/categoryService";
 import { searchProductsByCategory } from "../services/categoryService";
 
@@ -27,12 +27,7 @@ export const createCategory = async (req: Request, res: Response) => {
     const category: Category = req.body;
 
     // Validate the category data
-    if (
-      !category.name ||
-      !category.slug ||
-      !category.description ||
-      !category.image_url
-    ) {
+    if (!category.name || !category.slug || !category.image_url) {
       res.status(400).json({ error: "All fields are required" });
       return;
     }
@@ -64,7 +59,6 @@ export const updateACategory = async (req: Request, res: Response) => {
       !req.params.id ||
       !category.name ||
       !category.slug ||
-      !category.description ||
       !category.image_url
     ) {
       res.status(400).json({ error: "All fields are required" });
@@ -72,7 +66,10 @@ export const updateACategory = async (req: Request, res: Response) => {
     }
 
     // Update the category
-    const updatedCategory = await updateCategory({id: parseInt(req.params.id), ...category});
+    const updatedCategory = await updateCategory({
+      id: parseInt(req.params.id),
+      ...category,
+    });
     res.status(200).json(updatedCategory);
   } catch (error) {
     console.error("Error updating category:", error);
@@ -81,41 +78,112 @@ export const updateACategory = async (req: Request, res: Response) => {
 };
 
 export const deleteACategory = async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    try{
-        if (isNaN(id)) {
-            res.status(400).json({ error: "Invalid category ID" });
-            return;
-        }
-
-        const deletedCategory = await deleteCategory(id);
-        if (!deletedCategory) {
-            res.status(404).json({ error: "Category not found" })
-            return;
-        }
-
-        res.status(200).json({ message: "Category deleted successfully", category: deletedCategory });
-    }catch (error) {
-        console.error("Error deleting category:", error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-}
-
-export const getProductsByCategory = async (req: Request, res: Response): Promise<void> => {
-    const categoryId: number = Number(req.params.categoryId);
-    const limit: number = Number(req.query.limit) || 20;
-    const offset: number = Number(req.query.offset) || 0;
-
-    if (isNaN(categoryId) || categoryId <= 0) {
-        res.status(400).json({ error: 'Invalid category ID' });
-        return;
+  const id = parseInt(req.params.id);
+  try {
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid category ID" });
+      return;
     }
 
-    try {
-        const products: Product[] = await searchProductsByCategory(categoryId, limit, offset);
-        res.status(200).json(products);
-    } catch (err) {
-        console.error('Error fetching products by category', err);
-        res.status(500).json({ error: 'Error fetching products by category' });
+    const deletedCategory = await deleteCategory(id);
+    if (!deletedCategory) {
+      res.status(404).json({ error: "Category not found" });
+      return;
     }
-}
+
+    res
+      .status(200)
+      .json({
+        message: "Category deleted successfully",
+        category: deletedCategory,
+      });
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getProductsByCategory = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const categoryId: number = Number(req.params.categoryId);
+  const limit: number = Number(req.query.limit) || 20;
+  const offset: number = Number(req.query.offset) || 0;
+  const sortBy: string = (req.query.sortBy as string) || "Most Popular";
+  const minPrice: number | undefined = req.query.minPrice
+    ? Number(req.query.minPrice)
+    : undefined;
+  const maxPrice: number | undefined = req.query.maxPrice
+    ? Number(req.query.maxPrice)
+    : undefined;
+  const rating: number | undefined = req.query.rating
+    ? Number(req.query.rating)
+    : undefined;
+
+  if (isNaN(categoryId) || categoryId <= 0) {
+    res.status(400).json({ error: "Invalid category ID" });
+    return;
+  }
+
+  // Validate price range
+  if (minPrice !== undefined && (isNaN(minPrice) || minPrice < 0)) {
+    res.status(400).json({ error: "Invalid minimum price" });
+    return;
+  }
+
+  if (maxPrice !== undefined && (isNaN(maxPrice) || maxPrice < 0)) {
+    res.status(400).json({ error: "Invalid maximum price" });
+    return;
+  }
+
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+    res
+      .status(400)
+      .json({ error: "Minimum price cannot be greater than maximum price" });
+    return;
+  }
+
+  // Validate rating
+  if (rating !== undefined && (isNaN(rating) || rating < 1 || rating > 5)) {
+    res.status(400).json({ error: "Rating must be between 1 and 5" });
+    return;
+  }
+
+  // Validate sortBy options
+  const validSortOptions = [
+    "Most Popular",
+    "Newest",
+    "Most Bought",
+    "Price: Low to High",
+    "Price: High to Low",
+  ];
+  if (!validSortOptions.includes(sortBy)) {
+    res
+      .status(400)
+      .json({
+        error: `Invalid sort option. Valid options are: ${validSortOptions.join(
+          ", "
+        )}`,
+      });
+    return;
+  }
+
+  try {
+    const options = {
+      categoryId,
+      limit,
+      offset,
+      sortBy,
+      minPrice,
+      maxPrice,
+      rating,
+    };
+
+    const products: Product[] = await searchProductsByCategory(options);
+    res.status(200).json(products);
+  } catch (err) {
+    console.error("Error fetching products by category", err);
+    res.status(500).json({ error: "Error fetching products by category" });
+  }
+};
