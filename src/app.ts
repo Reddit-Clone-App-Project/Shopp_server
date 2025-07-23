@@ -7,6 +7,7 @@ import storeRoutes from './routes/storeRoutes';
 import productRoutes from './routes/productRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 import refreshTokenRoutes from './routes/refreshTokenRoutes';
+import cartRoutes from './routes/cartRoutes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
@@ -27,6 +28,7 @@ app.use('/admin', adminRoutes);
 app.use('/storage', storageRoutes);
 app.use('/shipper', shipperRoutes);
 app.use('/users', userRoutes);
+app.use('/cart', cartRoutes);
 app.use('/store', storeRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
