@@ -26,6 +26,14 @@ export const createOwner = async (owner: StoreOwner, client: PoolClient) => {
     );
 };
 
+export const getStoresOwned = async (userId: number) => {
+    const result = await pool.query(
+        'SELECT s.* FROM store_user su JOIN store s ON su.store_id = s.id WHERE su.app_user_id = $1 AND su.role = \'owner\'',
+        [userId]
+    );
+    return result.rows;
+};
+
 export const getStores = async () => {
     const result = await pool.query(
         'SELECT id, name, profile_img FROM store',

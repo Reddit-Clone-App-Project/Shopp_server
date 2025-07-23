@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned } from "../services/storeService";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -59,6 +59,29 @@ export const getAllStores = async ( req: Request, res: Response ) => {
         console.error("Error cannot get all stores", err);
         res.status(500).json({ error: "Error cannot get all stores" });
   };
+};
+
+export const getStoreByOwnerId = async ( req: Request, res: Response ) => {
+    
+    try{
+        if (req.user?.id === undefined) {
+            res.status(400).json({ error: 'User ID is required to get stores owned by user.' });
+            return;
+        };
+    
+        const userId = req.user?.id;
+        const storesOwned = await getStoresOwned(userId);
+        
+        if (!storesOwned || storesOwned.length === 0) {
+            res.status(404).json({ error: 'User is not the owner of any stores!'});
+            return;
+        }
+
+        res.status(200).json(storesOwned);
+    } catch (err) {
+        console.error('Error cannot get store by user id', err);
+        res.status(500).json({ error: 'Error cannot get store by user id'});
+    };
 };
 
 export const getStoreById = async ( req: Request, res: Response ) => {
