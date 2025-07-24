@@ -5,16 +5,7 @@ import { createAddress, createStore, createOwner, getStores, getStoreProfile, ge
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
-    const {
-        storeName,
-        storeEmail,
-        storePhone,
-        address,
-        expressShipping,
-        fastShipping,
-        economicalShipping,
-        bulkyShipping,
-    } = data;
+    const { address } = data;
 
     const client = await pool.connect();
 

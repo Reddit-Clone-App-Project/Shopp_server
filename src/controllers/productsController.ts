@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
-// import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
-// import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
-import { Product } from "../types/product";
+import { Product, ProductDataType, VariantDataType } from "../types/product";
 import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
@@ -38,9 +36,9 @@ export const getProductById = async (req: Request, res: Response) => {
     };
 };
 
-/*
+
 export const createAProduct = async (req: Request, res: Response) => {
-    const { name, description, price, store_id, category_id, sku, images, variants} = req.body;
+    const { store_id, variant } = req.body;
 
     const client = await pool.connect();
     try {
@@ -57,9 +55,9 @@ export const createAProduct = async (req: Request, res: Response) => {
             return;
         };
         // Create the product
-        const newProduct: BasicProduct = await createProduct({name, description, store_id, category_id});
+        //const newProduct: BasicProduct = await createProduct(req.body);
         
-        if(variants.length > 0){
+        if(variant.length > 0){
             await 
         }
 
@@ -75,6 +73,7 @@ export const createAProduct = async (req: Request, res: Response) => {
     };
 };
 
+/*
 export const updateAProduct = async (req: Request, res: Response) => {
     const productId: number = Number(req.params.id);
     const data: UpdateProduct = req.body;
