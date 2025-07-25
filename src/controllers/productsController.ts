@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
-import { Product, ProductDataType, VariantDataType } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions } from "../services/productsService";
+import { Product, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
 export const getHot = async (req: Request, res: Response) => {
@@ -43,6 +43,7 @@ export const createAProduct = async (req: Request, res: Response) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
         if (req.user?.id === undefined) {
             res.status(400).json({ error: 'User ID is required to update a store.' });
             return;
@@ -51,18 +52,27 @@ export const createAProduct = async (req: Request, res: Response) => {
         const userId: number = req.user?.id;
         const checkOwner: boolean = await checkStoreOwner(store_id, userId);
         if (!checkOwner) {
-            res.status(400).json({ error: 'You must be the owner of the store!'});
+            res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
-        // Create the product
-        //const newProduct: BasicProduct = await createProduct(req.body);
         
-        if(variant.length > 0){
-            await 
-        }
+        const newProduct  = await createProduct(req.body);
+        const productId: number = newProduct.id;
 
+        let variants = [];
+        if (Array.isArray(variant) && variant.length > 0) {
+            for (const v of variant) {
+                const variantProduct = { ...v, product_id: productId };
+                const newVariant = await createProductVariant(variantProduct);
+                variants.push(newVariant); 
+            };
+        };
+        
         await client.query('COMMIT');
-        res.status(201).json(newProduct);
+        res.status(201).json({
+            product: newProduct,
+            variants: variants,
+        });
         
     } catch (err) {
         await client.query('ROLLBACK');

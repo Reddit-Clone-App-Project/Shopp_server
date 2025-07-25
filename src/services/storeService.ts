@@ -81,13 +81,14 @@ export const getRecentReviews = async (storeId: number, limit: number): Promise<
     return result.rows;
 };
 
-export const checkStoreOwner = async (storeId: number, ownerId: number): Promise<boolean> => {
+export const checkStoreOwner = async (storeId: number, userId: number): Promise<boolean> => {
     const result = await pool.query(
         'SELECT app_user_id FROM store_user WHERE store_id = $1',
        [storeId] 
     );
-    const trueOwnerId = result.rows[0]?.app_user_id;
-    if (trueOwnerId === ownerId) {
+    const ownerId = result.rows[0]?.app_user_id;
+    
+    if (ownerId === userId) {
         return true;
     } else {
         return false;

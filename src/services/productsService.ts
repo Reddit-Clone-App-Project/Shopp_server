@@ -1,5 +1,5 @@
 import pool from "../config/db";
-import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct } from "../types/product";
+import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct, ProductDataType } from "../types/product";
 import { Review } from "../types/store";
 
 // This service get products for the home page
@@ -186,13 +186,24 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
     return result.rows[0];
 };
 
-export const createProduct = async (product: NewProduct): Promise<BasicProduct> => {
-    const result = await pool.query(
+export const createProduct = async (data: ProductDataType) => {
+    const product = await pool.query(
         'INSERT INTO product (name, description, store_id, category_id) VALUES ($1, $2, $3, $4) RETURNING id, name, description, store_id, category_id',
-        [product.name, product.description, product.store_id, product.category_id]
+        [data.name, data.description, data.store_id, data.category]
     );
-    return result.rows[0];
-}
+
+    const variant = await pool.query(
+        'INSERT INTO product_variant (product_id, price, length, width, height, weight, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, price, length, width, height, weight, variant_name',
+        [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, data.sku, data.variant[0].variantName]
+    );
+
+    const promoImage = await pool.query(
+        'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3) RETURNING url',
+        [product.rows[0].id, data.promotionImage, true]
+    );
+    
+    return product.rows[0];
+};
 
 export const updateProduct = async (productId: number, product: UpdateProduct): Promise<UpdateProduct> => {
     const result = await pool.query(

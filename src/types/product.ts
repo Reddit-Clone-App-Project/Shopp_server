@@ -1,6 +1,7 @@
 export type ProductDataType = {
     name: string;
     category: string;
+    store_id: number;
     description: string;
     productImage: (string | File)[];
     promotionImage: string | File;
