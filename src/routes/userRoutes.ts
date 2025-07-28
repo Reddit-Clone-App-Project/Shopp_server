@@ -1,11 +1,12 @@
 import express from 'express';
 import { registerUser, getProfile, updateProfile, deleteProfile, loginUser, logoutUser, getAddressById } from '../controllers/userController';
 import { authenticateToken } from '../middlewares/authenticateToken';
+import { authLimiter } from '../app';
 
 const router = express.Router();
 
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+router.post('/register', authLimiter, registerUser);
+router.post('/login', authLimiter, loginUser);
 router.post('/logout', logoutUser);
 router.get('/me', authenticateToken, getProfile);
 router.put('/me', authenticateToken, updateProfile);
