@@ -1,4 +1,5 @@
 import express from 'express';
+import helmet from 'helmet';
 import adminRoutes from './routes/adminRoutes';
 import storageRoutes from './routes/storageRoutes';
 import shipperRoutes from './routes/shipperRoutes';
@@ -19,6 +20,7 @@ const corsOptions = {
 const app = express();
 
 app.use(cors(corsOptions));
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
