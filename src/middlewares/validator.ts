@@ -25,6 +25,8 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
         return;
     };
 
+    req.body.email = validator.normalizeEmail(email);
+
     next();
 };
 
@@ -50,6 +52,8 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction) =
         res.status(400).json({ error: 'Phone number is not valid' });
         return;
     };
+
+    req.body.email = validator.normalizeEmail(email);
 
     next();
 };
