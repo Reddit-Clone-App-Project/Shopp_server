@@ -1,5 +1,5 @@
 import pool from "../config/db";
-import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct, ProductCard } from "../types/product";
+import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct, ProductCard, ProductDataType, VariantDataType } from "../types/product";
 import { Review } from "../types/store";
 
 // This service get products for the home page
@@ -150,13 +150,34 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
     return result.rows[0];
 };
 
-export const createProduct = async (product: NewProduct): Promise<BasicProduct> => {
-    const result = await pool.query(
+export const createProduct = async (data: ProductDataType) => {
+    const product = await pool.query(
         'INSERT INTO product (name, description, store_id, category_id) VALUES ($1, $2, $3, $4) RETURNING id, name, description, store_id, category_id',
-        [product.name, product.description, product.store_id, product.category_id]
+        [data.name, data.description, data.store_id, data.category]
     );
-    return result.rows[0];
-}
+
+    const variant = await pool.query(
+        'INSERT INTO product_variant (product_id, price, length, width, height, weight, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, price, length, width, height, weight, variant_name',
+        [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, data.sku, data.variant[0].variantName]
+    );
+
+    const promoImage = await pool.query(
+        'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3) RETURNING url',
+        [product.rows[0].id, data.promotionImage, true]
+    );
+
+    const images = [];
+
+    for (const url of data.productImage) {
+        const image = await pool.query(
+            'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3) RETURNING url',
+            [product.rows[0].id, url, false]
+        );
+        images.push(image.rows[0].url);
+    };
+    
+    return product.rows[0];
+};
 
 export const updateProduct = async (productId: number, product: UpdateProduct): Promise<UpdateProduct> => {
     const result = await pool.query(
@@ -187,12 +208,16 @@ export const getProductId = async (variant_id: number): Promise<number> =>{
     return result.rows[0].product_id;
 };
 
-export const createProductVariant = async (variant: BasicProductVariant) => {
+
+export const createProductVariant = async (variant: VariantDataType) => {
+
+    const dimension = Number(variant.variantHeight) * Number(variant.variantLength) * Number(variant.variantWidth);
+
     const result = await pool.query(
-        'INSERT INTO product_variant (id, product_id, variant_name, price, stock_quantity, weight, sku) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-        [variant.id, variant.product_id, variant.variant_name, variant.price, variant.stock_quantity, variant.weight, variant.sku]
+        'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, variant_name, price, weight, dimension',
+        [variant.product_id, variant.variantName, variant.variantPrice, variant.variantWeight, dimension, variant.variantLength, variant.variantWidth, variant.variantHeight, variant.variantSku]
     );
-    return result.rows[0].id;
+    return result.rows[0];
 };
 
 export const updateProductVariant = async (variantId: number, variant: UpdateProductVariant): Promise<number> => {

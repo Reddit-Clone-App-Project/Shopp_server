@@ -1,6 +1,6 @@
 import express from "express";
 // import { addVariant, addVariantImage, createAProduct, deleteImage, deleteProductProfile, deleteVariantProfile, getHot, getProductById, updateAProduct, updateVariant, updateVariantImage } from "../controllers/productsController";
-import { fetchSuggestions, getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
+import { fetchSuggestions, createAProduct, getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authorizeRole } from "../middlewares/authorizationRole";
 
@@ -16,8 +16,8 @@ router.get('/hot', getHot);
 
 
 router.get('/:id', getProductById);
-/*
 router.post('/create', authenticateToken, authorizeRole(['seller', 'admin']), createAProduct);
+/*
 router.put('/:id', authenticateToken, authorizeRole(['seller', 'admin']), updateAProduct);
 router.post('/variant', authenticateToken, authorizeRole(['seller', 'admin']), addVariant);
 router.put('/variant/:id', authenticateToken, authorizeRole(['seller', 'admin']), updateVariant);

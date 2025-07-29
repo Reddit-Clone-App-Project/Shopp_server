@@ -1,3 +1,31 @@
+export type ProductDataType = {
+    name: string;
+    category: string;
+    store_id: number;
+    description: string;
+    productImage: (string | File)[];
+    promotionImage: string | File;
+    price: string;
+    weight: string;
+    length: string;
+    width: string;
+    height: string;
+    sku: string;
+    variant: VariantDataType[];
+};
+
+export type VariantDataType = {
+    product_id: number;
+    variantName: string;
+    variantPrice: string;
+    variantWeight: string;
+    variantLength: string;
+    variantWidth: string;
+    variantHeight: string;
+    variantSku: string;
+};
+
+
 export type NewProduct = {
     name: string;
     description: string;

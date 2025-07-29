@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
-import { Product, ProductCard } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions } from "../services/productsService";
+import { Product, ProductCard, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
 export const getHot = async (req: Request, res: Response) => {
@@ -38,13 +38,14 @@ export const getProductById = async (req: Request, res: Response) => {
     };
 };
 
-/*
+
 export const createAProduct = async (req: Request, res: Response) => {
-    const { name, description, price, store_id, category_id, sku, images, variants} = req.body;
+    const { store_id, variant } = req.body;
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
         if (req.user?.id === undefined) {
             res.status(400).json({ error: 'User ID is required to update a store.' });
             return;
@@ -53,18 +54,27 @@ export const createAProduct = async (req: Request, res: Response) => {
         const userId: number = req.user?.id;
         const checkOwner: boolean = await checkStoreOwner(store_id, userId);
         if (!checkOwner) {
-            res.status(400).json({ error: 'You must be the owner of the store!'});
+            res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
-        // Create the product
-        const newProduct: BasicProduct = await createProduct({name, description, store_id, category_id});
         
-        if(variants.length > 0){
-            await 
-        }
+        const newProduct  = await createProduct(req.body);
+        const productId: number = newProduct.id;
 
+        let variants = [];
+        if (Array.isArray(variant) && variant.length > 0) {
+            for (const v of variant) {
+                const variantProduct: VariantDataType = { ...v, product_id: productId };
+                const newVariant = await createProductVariant(variantProduct);
+                variants.push(newVariant); 
+            };
+        };
+        
         await client.query('COMMIT');
-        res.status(201).json(newProduct);
+        res.status(201).json({
+            product: newProduct,
+            variants: variants,
+        });
         
     } catch (err) {
         await client.query('ROLLBACK');
@@ -75,6 +85,7 @@ export const createAProduct = async (req: Request, res: Response) => {
     };
 };
 
+/*
 export const updateAProduct = async (req: Request, res: Response) => {
     const productId: number = Number(req.params.id);
     const data: UpdateProduct = req.body;
