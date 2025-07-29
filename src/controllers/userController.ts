@@ -133,7 +133,7 @@ export const loginUser = async (req: Request, res: Response) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    const { id, databasePassword } = userValidationResult;
+    const { id, databasePassword, role } = userValidationResult;
 
     const isValid = await bcrypt.compare(
       String(password),
@@ -147,13 +147,13 @@ export const loginUser = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { id },
+      { id, role },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { id, role: "user" },
+      { id, role },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
