@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
-import { Product, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
+// import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
+// import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
+import { Product, ProductCard, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
 import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
 
