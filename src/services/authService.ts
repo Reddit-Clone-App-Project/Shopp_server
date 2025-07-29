@@ -2,21 +2,21 @@ import pool from '../config/db';
 import validator from 'validator';
 
 // User
-export const validationUser = async (eOrP: string): Promise<{id: number, databasePassword: string} | undefined> => {
+export const validationUser = async (eOrP: string): Promise<{id: number, databasePassword: string, role: string} | undefined> => {
     let result: any;
     if (validator.isEmail(eOrP)) {
         result = await pool.query(
-            'SELECT id, password FROM app_user WHERE email = $1',
+            'SELECT id, password, role FROM app_user WHERE email = $1',
             [eOrP]
         );
     } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
         result = await pool.query(
-            'SELECT id, password FROM app_user WHERE phone_number = $1',
+            'SELECT id, password, role FROM app_user WHERE phone_number = $1',
             [eOrP]
         );
     }
 
-    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password, role: result.rows[0]?.role};
 };
 
 export const assignRefreshTokenToDB = async (id: number, refreshToken: string): Promise<void> => {

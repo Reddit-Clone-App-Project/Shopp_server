@@ -1,10 +1,11 @@
 import express from "express";
 import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreByOwnerId } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
+import { authLimiter } from "../middlewares/rateLimiter";
 
 const router = express.Router();
 
-router.post('/', authenticateToken, registerStore);
+router.post('/', authLimiter, authenticateToken, registerStore);
 router.get('/:id', getStoreById);
 router.get('/my-store', authenticateToken, getStoreByOwnerId)
 router.put('/:id', authenticateToken, updateStore);

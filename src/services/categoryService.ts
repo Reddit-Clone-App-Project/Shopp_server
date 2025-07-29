@@ -1,6 +1,6 @@
 import pool from "../config/db";
 import { ActiveCategory, Category, UpdateCategory } from "../types/category";
-import { Product } from "../types/product";
+import { ProductCard } from "../types/product";
 
 // User
 export const getAllActiveCategories = async (): Promise<ActiveCategory[]> => {
@@ -62,93 +62,51 @@ interface CategorySearchOptions {
 
 export const searchProductsByCategory = async (
   options: CategorySearchOptions
-): Promise<Product[]> => {
+): Promise<ProductCard[]> => {
   const {
     categoryId,
     limit = 20,
     offset = 0,
-    sortBy = "Most Popular",
+    sortBy = 'Most Popular',
     minPrice,
     maxPrice,
     rating,
   } = options;
 
-  const params: any[] = [];
-  let paramIndex = 1;
+  const params: any[] = [categoryId];
+  let paramIndex = 2; // Start params at $2 since $1 is the categoryId
 
-  // This rewritten query uses CTEs for performance, similar to searchProducts.
+  // The query is now simplified to fetch only ProductCard data
   let query = `
-    WITH variants_agg AS (
-      -- CTE 1: Pre-aggregate all variant data, including their images and discounts
-      SELECT
-        pv.product_id,
-        json_agg(
-          json_build_object(
-            'id', pv.id, 'variant_name', pv.variant_name, 'price', pv.price, 
-            'stock_quantity', pv.stock_quantity, 'sku', pv.sku,
-            'images', (
-              SELECT json_agg(json_build_object('id', pi.id, 'url', pi.url, 'alt_text', pi.alt_text)) 
-              FROM public.product_image pi WHERE pi.product_variant_id = pv.id
-            ),
-            'discounts', (
-              SELECT json_agg(json_build_object('id', d.id, 'name', d.name, 'discount_type', d.discount_type, 'discount_value', d.discount_value, 'start_at', d.start_at, 'end_at', d.end_at)) 
-              FROM public.discount d JOIN public.product_discount pd ON d.id = pd.discount_id 
-              WHERE pd.product_variant_id = pv.id AND d.status = 'active' AND d.discount_where = 'product'
-            )
-          )
-        ) AS variants
-      FROM public.product_variant pv
-      GROUP BY pv.product_id
-    ),
-    product_images_agg AS (
-      -- CTE 2: Pre-aggregate product-level images
-      SELECT 
-        pi.product_id,
-        json_agg(json_build_object('id', pi.id, 'url', pi.url, 'alt_text', pi.alt_text)) as product_images
-      FROM public.product_image pi
-      WHERE pi.product_variant_id IS NULL AND pi.is_promotion_image = false
-      GROUP BY pi.product_id
-    ),
-    promo_image_agg AS (
-      -- CTE 3: Get the single promotion image for each product
-      SELECT DISTINCT ON (product_id)
-        product_id,
-        json_build_object('id', id, 'url', url, 'alt_text', alt_text) as promotion_image
-      FROM public.product_image
-      WHERE is_promotion_image = true
-    )
     SELECT
-      p.id, p.name, p.description, p.created_at, p.updated_at, p.is_published,
-      p.views, p.bought, p.total_reviews, p.average_rating, p.stars_5, p.stars_4,
-      p.stars_3, p.stars_2, p.stars_1, p.have_comment, p.have_image,
-      json_build_object('id', s.id, 'name', s.name, 'profile_img', s.profile_img) AS store,
-      ch.category_hierarchy,
-      promo.promotion_image,
-      v.variants,
-      pi.product_images
-    FROM public.product p
-    LEFT JOIN public.store s ON p.store_id = s.id
-    LEFT JOIN variants_agg v ON p.id = v.product_id
-    LEFT JOIN product_images_agg pi ON p.id = pi.product_id
-    LEFT JOIN promo_image_agg promo ON p.id = promo.product_id
-    LEFT JOIN LATERAL (
-      WITH RECURSIVE category_path AS (
-          SELECT id, name, slug, parent_id, 0 as level FROM public.category WHERE id = p.category_id
-          UNION ALL
-          SELECT c.id, c.name, c.slug, c.parent_id, cp.level + 1 FROM public.category c JOIN category_path cp ON c.id = cp.parent_id
-      )
-      SELECT json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY level ASC) AS category_hierarchy
-      FROM category_path
-    ) ch ON true
+        p.id,
+        p.name,
+        p.bought,
+        p.average_rating,
+        (
+            SELECT json_build_object('id', id, 'url', url, 'alt_text', alt_text)
+            FROM public.product_image
+            WHERE product_id = p.id AND is_promotion_image = true
+            LIMIT 1
+        ) AS promotion_image,
+        json_build_object('id', s.id, 'name', s.name) AS store,
+        (
+            SELECT MIN(price)
+            FROM public.product_variant
+            WHERE product_id = p.id
+        ) AS price
+    FROM 
+        public.product p
+    LEFT JOIN 
+        public.store s ON p.store_id = s.id
   `;
 
   // --- Dynamic WHERE Clause ---
   const whereClauses: string[] = [];
-  whereClauses.push(`p.category_id = $${paramIndex++}`);
-  params.push(categoryId);
-  whereClauses.push(`p.is_active = true`);
+  whereClauses.push(`p.category_id = $1`);
+  whereClauses.push(`p.is_active = true AND p.is_published = true`);
 
-  if (rating) {
+  if (rating !== undefined) {
     whereClauses.push(`p.average_rating >= $${paramIndex++}`);
     params.push(rating);
   }
@@ -163,30 +121,27 @@ export const searchProductsByCategory = async (
       priceConditions.push(`pv.price <= $${paramIndex++}`);
       params.push(maxPrice);
     }
-    whereClauses.push(
-      `EXISTS (SELECT 1 FROM public.product_variant pv WHERE pv.product_id = p.id AND ${priceConditions.join(
-        " AND "
-      )})`
-    );
+    whereClauses.push(`EXISTS (SELECT 1 FROM public.product_variant pv WHERE pv.product_id = p.id AND ${priceConditions.join(' AND ')})`);
   }
-  query += ` WHERE ${whereClauses.join(" AND ")}`;
+
+  query += ` WHERE ${whereClauses.join(' AND ')}`;
 
   // --- Dynamic ORDER BY Clause ---
-  let orderByClause = "";
+  let orderByClause = '';
   switch (sortBy) {
-    case "Newest":
-      orderByClause = "ORDER BY p.created_at DESC";
+    case 'Newest':
+      orderByClause = 'ORDER BY p.created_at DESC';
       break;
-    case "Most Bought":
-      orderByClause = "ORDER BY p.bought DESC";
+    case 'Most Bought':
+      orderByClause = 'ORDER BY p.bought DESC';
       break;
-    case "Price: Low to High":
+    case 'Price: Low to High':
       orderByClause = `ORDER BY (SELECT MIN(price) FROM public.product_variant WHERE product_id = p.id) ASC NULLS LAST`;
       break;
-    case "Price: High to Low":
+    case 'Price: High to Low':
       orderByClause = `ORDER BY (SELECT MIN(price) FROM public.product_variant WHERE product_id = p.id) DESC NULLS LAST`;
       break;
-    case "Most Popular":
+    case 'Most Popular':
     default:
       orderByClause = `ORDER BY p.views DESC, p.bought DESC, p.average_rating DESC, p.created_at DESC`;
       break;

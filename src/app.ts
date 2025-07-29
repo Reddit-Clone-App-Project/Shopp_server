@@ -1,4 +1,5 @@
 import express from 'express';
+import helmet from 'helmet';
 import adminRoutes from './routes/adminRoutes';
 import storageRoutes from './routes/storageRoutes';
 import shipperRoutes from './routes/shipperRoutes';
@@ -10,17 +11,21 @@ import refreshTokenRoutes from './routes/refreshTokenRoutes';
 import cartRoutes from './routes/cartRoutes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { globalLimiter } from './middlewares/rateLimiter';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
     credentials: true,
-}
+};
 
 const app = express();
 
 app.use(cors(corsOptions));
+app.use(helmet());
+app.use(globalLimiter);
 app.use(express.json());
 app.use(cookieParser());
+app.disable('x-powered-by');
 
 app.use('/refresh', refreshTokenRoutes);
 

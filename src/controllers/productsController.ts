@@ -11,7 +11,7 @@ export const getHot = async (req: Request, res: Response) => {
     const offset: number = Number(req.query.offset) || 0;
 
     try {
-        const products: Product[] = await getHotProducts(limit, offset);
+        const products: ProductCard[] = await getHotProducts(limit, offset);
         res.status(200).json(products);
     } catch (err) {
         console.error('Error cannot get hot products', err);
@@ -421,7 +421,7 @@ export const searchForProducts = async (req: Request, res: Response): Promise<vo
     }
 
     try {
-        const products: Product[] = await searchProducts({searchTerm, limit, offset, sortBy, minPrice, maxPrice, rating});
+        const products: ProductCard[] = await searchProducts({searchTerm, limit, offset, sortBy, minPrice, maxPrice, rating});
         res.status(200).json(products);
     } catch (err) {
         console.error('Error searching for products', err);
