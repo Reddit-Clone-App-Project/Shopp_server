@@ -2,9 +2,31 @@ import { Request, Response, NextFunction } from "express";
 import validator from 'validator';
 
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
-    const { email, password, phone_number } = req.body;
+    const { eOrP, password} = req.body;
 
-    if (!email || !validator.isEmail(email)) {
+    if (!eOrP || !password) {
+        res.status(400).json({ error: 'Email/Phone and password are required' });
+        return;
+    };
+
+    let email: string | undefined;
+    let phone_number: string | undefined;
+
+    if (validator.isEmail(eOrP)) {
+        email = validator.normalizeEmail(eOrP) || undefined;
+    } else if (validator.isMobilePhone(eOrP, 'any')) {
+        phone_number = eOrP;
+    } else {
+        res.status(400).json({ error: 'Invalid email or phone number format'});
+        return;
+    };
+
+    if (!email && !phone_number) {
+        res.status(400).json({ error: 'Email or phone number required'});
+        return;
+    }
+
+    if (email && !validator.isEmail(email)) {
         res.status(400).json({ error: 'Email is not valid' });
         return;
     };
@@ -20,18 +42,33 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
         return;
     };
 
-    if (!phone_number || !validator.isMobilePhone(phone_number, 'any')) {
+    if (phone_number && !validator.isMobilePhone(phone_number, 'any')) {
         res.status(400).json({ error: 'Phone number is not valid' });
         return;
     };
-
-    req.body.email = validator.normalizeEmail(email);
 
     next();
 };
 
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
-    const { email, password, phone_number} = req.body;
+    const { eOrP, password} = req.body;
+
+    if (!eOrP || !password) {
+        res.status(400).json({ error: 'Email/Phone and password are required' });
+        return;
+    };
+
+    let email: string | undefined;
+    let phone_number: string | undefined;
+
+    if (validator.isEmail(eOrP)) {
+        email = validator.normalizeEmail(eOrP) || undefined;
+    } else if (validator.isMobilePhone(eOrP, 'any')) {
+        phone_number = eOrP;
+    } else {
+        res.status(400).json({ error: 'Invalid email or phone number format'});
+        return;
+    };
 
     if (!email && !phone_number) {
         res.status(400).json({ error: 'Email or phone number required'});
@@ -52,8 +89,6 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction) =
         res.status(400).json({ error: 'Phone number is not valid' });
         return;
     };
-
-    req.body.email = validator.normalizeEmail(email);
 
     next();
 };
