@@ -126,7 +126,7 @@ export const loginStorage = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { id },
+      { id, role: "storage" },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
