@@ -1,7 +1,7 @@
 import express from "express";
 import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreByOwnerId } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
-import { authLimiter } from "../app";
+import { authLimiter } from "../middlewares/rateLimiter";
 
 const router = express.Router();
 

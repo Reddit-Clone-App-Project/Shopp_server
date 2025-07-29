@@ -85,29 +85,6 @@ export const getStoreByOwnerId = async ( req: Request, res: Response ) => {
     };
 };
 
-export const getStoreByOwnerId = async ( req: Request, res: Response ) => {
-    
-    try{
-        if (req.user?.id === undefined) {
-            res.status(400).json({ error: 'User ID is required to get stores owned by user.' });
-            return;
-        };
-    
-        const userId = req.user?.id;
-        const storesOwned = await getStoresOwned(userId);
-        
-        if (!storesOwned || storesOwned.length === 0) {
-            res.status(404).json({ error: 'User is not the owner of any stores!'});
-            return;
-        }
-
-        res.status(200).json(storesOwned);
-    } catch (err) {
-        console.error('Error cannot get store by user id', err);
-        res.status(500).json({ error: 'Error cannot get store by user id'});
-    };
-};
-
 export const getStoreById = async ( req: Request, res: Response ) => {
     const storeId = Number(req.params.id);
 

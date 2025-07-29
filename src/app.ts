@@ -1,6 +1,5 @@
 import express from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import adminRoutes from './routes/adminRoutes';
 import storageRoutes from './routes/storageRoutes';
 import shipperRoutes from './routes/shipperRoutes';
@@ -12,26 +11,12 @@ import refreshTokenRoutes from './routes/refreshTokenRoutes';
 import cartRoutes from './routes/cartRoutes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { globalLimiter } from './middlewares/rateLimiter';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
     credentials: true,
 };
-
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: 'Too many requests, try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-export const authLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000,
-    max: 5,
-    message: 'Too many requests, try again in 5 minutes',
-    standardHeaders: true,
-    legacyHeaders: false,
-});
 
 const app = express();
 
