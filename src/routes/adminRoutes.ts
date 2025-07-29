@@ -3,7 +3,7 @@ import { fetchUsers, registerAdmin, getProfileAdmin, updateProfileAdmin, deleteP
 import { getAllStores } from '../controllers/storeController';
 import { authenticateToken } from '../middlewares/authenticateToken';
 import { authorizeRole } from '../middlewares/authorizationRole';
-import { authLimiter } from '../app';
+import { authLimiter } from '../middlewares/rateLimiter';
 
 const router = express.Router();
 

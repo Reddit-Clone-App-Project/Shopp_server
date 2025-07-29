@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
 import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned } from "../services/storeService";
+import { ProductCard } from "../types/product";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -210,7 +211,7 @@ export const getStoreHotProducts = async ( req: Request, res: Response ) => {
     const limit = Number(req.query.limit) || 4;
     const offset = Number(req.query.offset) || 0;
     try {
-        const hotProducts = await getStoreTrendingProducts(storeId, limit, offset);
+        const hotProducts: ProductCard[] = await getStoreTrendingProducts(storeId, limit, offset);
         res.status(200).json(hotProducts);
     } catch (err) {
         console.error("Error cannot get store hot products", err);
@@ -223,7 +224,7 @@ export const getStoreProductsBought = async ( req: Request, res: Response ) => {
     const limit = Number(req.query.limit) || 5;
     const offset = Number(req.query.offset) || 0;
     try {
-        const products = await getStoreProducts(storeId, limit, offset);
+        const products: ProductCard[] = await getStoreProducts(storeId, limit, offset);
         res.status(200).json(products);
     } catch (err) {
         console.error("Error cannot get store products", err);

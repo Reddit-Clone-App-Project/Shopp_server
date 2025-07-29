@@ -1,7 +1,7 @@
 import express from 'express';
 import { registerShipper, getProfileShipper, updateProfileShipper, deleteProfileShipper, loginShipper, logoutShipper } from '../controllers/shipperController';
 import { authenticateToken } from '../middlewares/authenticateToken';
-import { authLimiter } from '../app';
+import { authLimiter } from '../middlewares/rateLimiter';
 
 const router = express.Router();
 

@@ -9,7 +9,7 @@ import {
 } from "../services/categoryService";
 import { searchProductsByCategory } from "../services/categoryService";
 
-import { Product } from "../types/product";
+import { ProductCard } from "../types/product";
 
 export const getActiveCategories = async (req: Request, res: Response) => {
   try {
@@ -180,7 +180,7 @@ export const getProductsByCategory = async (
       rating,
     };
 
-    const products: Product[] = await searchProductsByCategory(options);
+    const products: ProductCard[] = await searchProductsByCategory(options);
     res.status(200).json(products);
   } catch (err) {
     console.error("Error fetching products by category", err);

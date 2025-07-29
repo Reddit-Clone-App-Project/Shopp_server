@@ -1,7 +1,7 @@
 import express from 'express';
 import { registerStorage, getProfileStorage, updateProfileStorage, deleteProfileStorage, loginStorage, logoutStorage } from '../controllers/storageController';
 import { authenticateToken } from '../middlewares/authenticateToken';
-import { authLimiter } from '../app';
+import { authLimiter } from '../middlewares/rateLimiter';
 
 const router = express.Router();
 

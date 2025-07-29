@@ -18,7 +18,7 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
     jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET as string,
-        (err: any, decoded: any) => {
+        async (err: any, decoded: any) => {
             if (err) {
                 res.status(403).json({ error: 'Invalid refresh token' });
                 return;
@@ -26,33 +26,33 @@ export const handleRefreshToken = (req: Request, res: Response) : void => {
         
             const role = decoded.role;
            
-            if (role === 'user'){
-                const foundUser = getUserByRefreshToken(refreshToken);
+            if (role === 'buyer' || role === 'seller') {
+                const foundUser = await getUserByRefreshToken(refreshToken);
                 if (!foundUser) {
                     res.status(403).json({ message: 'Forbidden' });
                     return;
                 }
             }else if (role === 'admin'){
-                const foundAdmin = getAdminByRefreshToken(refreshToken);
+                const foundAdmin = await getAdminByRefreshToken(refreshToken);
                 if (!foundAdmin) {
                     res.status(403).json({ message: 'Forbidden' });
                     return;
                 }
             }else if (role === 'shipper'){
-                const foundShipper = getShipperByRefreshToken(refreshToken);
+                const foundShipper = await getShipperByRefreshToken(refreshToken);
                 if (!foundShipper) {
                     res.status(403).json({ message: 'Forbidden' });
                     return;
                 }
             }else if (role === 'storage'){
-                const foundStorage = getStorageByRefreshToken(refreshToken);
+                const foundStorage = await getStorageByRefreshToken(refreshToken);
                 if (!foundStorage) {
                     res.status(403).json({ message: 'Forbidden' });
                     return;
                 }
             }
 
-            const newAccessToken = jwt.sign({ id: decoded.id, eOrP: decoded.eOrP }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
+            const newAccessToken = jwt.sign({ id: decoded.id, role }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
             res.json({ accessToken: newAccessToken });
     });
 }

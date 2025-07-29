@@ -131,3 +131,18 @@ export interface Product {
     variants: ProductVariant[] | null;
     product_images: ProductImage[] | null;
 }
+
+export interface ProductCardStore{
+    id: number;
+    name: string;
+}
+
+export interface ProductCard {
+    id: number;
+    name:string;
+    bought: number;
+    average_rating: string; // Kept as string to match query output
+    price: string;          // Represents the price of the primary variant
+    promotion_image: ProductImage | null;
+    store: ProductCardStore | null;
+}
