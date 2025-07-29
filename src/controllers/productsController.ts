@@ -62,7 +62,7 @@ export const createAProduct = async (req: Request, res: Response) => {
         let variants = [];
         if (Array.isArray(variant) && variant.length > 0) {
             for (const v of variant) {
-                const variantProduct = { ...v, product_id: productId };
+                const variantProduct: VariantDataType = { ...v, product_id: productId };
                 const newVariant = await createProductVariant(variantProduct);
                 variants.push(newVariant); 
             };

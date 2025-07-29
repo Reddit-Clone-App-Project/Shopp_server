@@ -15,7 +15,7 @@ export type ProductDataType = {
 };
 
 export type VariantDataType = {
-    id: number;
+    product_id: number;
     variantName: string;
     variantPrice: string;
     variantWeight: string;
