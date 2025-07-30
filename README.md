@@ -4,7 +4,7 @@ This repository contains the official backend server for the **Shopp E-commerce 
 
 The primary role of this server is to handle business logic, manage data persistence with a PostgreSQL database, and provide all necessary API endpoints for the e-commerce application.
 
-> **Note:** The frontend client for this project can be found at: **[Link to your frontend repository here]**
+> **Note:** The frontend client for this project can be found at: **https://github.com/Reddit-Clone-App-Project/Shopp_client**
 
 ## 🤝 We're Open to Contributions!
 
