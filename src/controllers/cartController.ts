@@ -37,8 +37,8 @@ export const addItem = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await addItemToCartByUserId(userId, productVariantId, quantity, priceAtPurchase);
-    res.status(201).json({ message: 'Item added to cart' });
+    const updatedCart = await addItemToCartByUserId(userId, productVariantId, quantity, priceAtPurchase);
+    res.status(200).json(updatedCart);
   } catch (error) {
     console.error('Error adding item to cart:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -60,8 +60,8 @@ export const removeItem = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    await removeItemFromCartByUserId(userId, productVariantId);
-    res.status(200).json({ message: 'Item removed from cart' });
+    const updatedCart = await removeItemFromCartByUserId(userId, productVariantId);
+    res.status(200).json(updatedCart);
   } catch (error) {
     console.error('Error removing item from cart:', error);
     res.status(500).json({ error: 'Internal server error' });
