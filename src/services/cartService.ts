@@ -68,6 +68,9 @@ export const addItemToCartByUserId = async (userId: number, productVariantId: nu
     SET quantity = cart_item.quantity + $3; -- Example: if item exists, increase quantity
   `;
   await pool.query(query, [userId, productVariantId, quantity, priceAtPurchase]);
+
+  // After adding the item, return the updated cart
+  return getCartByUserId(userId);
 };
 
 export const removeItemFromCartByUserId = async (userId: number, productVariantId: number) => {
@@ -77,4 +80,6 @@ export const removeItemFromCartByUserId = async (userId: number, productVariantI
       AND cart_id = (SELECT id FROM public.cart WHERE app_user_id = $1);
   `;
   await pool.query(query, [userId, productVariantId]);
+
+  return getCartByUserId(userId);
 };
