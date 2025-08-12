@@ -1,3 +1,4 @@
+import { PoolClient } from "pg";
 import pool from "../config/db";
 import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct, ProductCard, ProductDataType, VariantDataType } from "../types/product";
 import { Review } from "../types/store";
@@ -150,33 +151,80 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
     return result.rows[0];
 };
 
-export const createProduct = async (data: ProductDataType) => {
-    const product = await pool.query(
+export const checkStoreOwner = async (client: PoolClient, storeId: number, userId: number): Promise<boolean> => {
+    const result = await client.query(
+        'SELECT app_user_id FROM store_user WHERE store_id = $1',
+       [storeId] 
+    );
+    const ownerId = result.rows[0]?.app_user_id;
+    
+    if (ownerId === userId) {
+        return true;
+    } else {
+        return false;
+    };
+};
+
+export const createProduct = async (client: PoolClient ,data: ProductDataType) => {
+    const categoryId = Number(data.category) || null;
+
+    const product = await client.query(
         'INSERT INTO product (name, description, store_id, category_id) VALUES ($1, $2, $3, $4) RETURNING id, name, description, store_id, category_id',
         [data.name, data.description, data.store_id, data.category]
     );
 
-    const variant = await pool.query(
+    await client.query(
         'INSERT INTO product_variant (product_id, price, length, width, height, weight, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, price, length, width, height, weight, variant_name',
         [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, data.sku, data.variant[0].variantName]
     );
 
-    const promoImage = await pool.query(
-        'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3) RETURNING url',
-        [product.rows[0].id, data.promotionImage, true]
-    );
-
-    const images = [];
-
-    for (const url of data.productImage) {
-        const image = await pool.query(
-            'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3) RETURNING url',
-            [product.rows[0].id, url, false]
+    if (data.promotionImage) {
+        await client.query(
+            'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3)',
+            [product.rows[0].id, data.promotionImage, true]
         );
-        images.push(image.rows[0].url);
+    };
+
+    if (Array.isArray(data.productImage) && data.productImage.length > 0) {
+        for (const url of data.productImage) {
+            await client.query(
+                'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3)',
+                [product.rows[0].id, url, false]
+            );
+        };
     };
     
     return product.rows[0];
+};
+
+export const createProductVariant = async (client: PoolClient, variant: VariantDataType & { product_id: number }) => {
+
+    const price = Number(variant.variantPrice);
+    const weight = Number(variant.variantWeight);
+    const length = Number(variant.variantLength);
+    const width  = Number(variant.variantWidth);
+    const height = Number(variant.variantHeight);
+    const dimension = Number.isFinite(length) && Number.isFinite(width) && Number.isFinite(height)
+        ? length * width * height
+        : null;
+
+    const newVariant = await client.query(
+        'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, variant_name, price, weight, dimension',
+        [variant.product_id, variant.variantName, variant.variantPrice, variant.variantWeight, dimension, variant.variantLength, variant.variantWidth, variant.variantHeight, variant.variantSku]
+    );
+
+    const newVariantId = newVariant.rows[0].id;
+
+    if (Array.isArray(variant.variantImage) && variant.variantImage.length > 0) {
+        for (const url of variant.variantImage) {
+            await client.query(
+                'INSERT INTO product_image (product_id, product_variant_id, url) VALUES ($1, $2, $3)',
+                [variant.product_id, variant.id, url]
+            );
+        };
+    }
+
+    return newVariant.rows[0];
 };
 
 export const updateProduct = async (productId: number, product: UpdateProduct): Promise<UpdateProduct> => {
@@ -208,18 +256,6 @@ export const getProductId = async (variant_id: number): Promise<number> =>{
     return result.rows[0].product_id;
 };
 
-
-export const createProductVariant = async (variant: VariantDataType) => {
-
-    const dimension = Number(variant.variantHeight) * Number(variant.variantLength) * Number(variant.variantWidth);
-
-    const result = await pool.query(
-        'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, variant_name, price, weight, dimension',
-        [variant.product_id, variant.variantName, variant.variantPrice, variant.variantWeight, dimension, variant.variantLength, variant.variantWidth, variant.variantHeight, variant.variantSku]
-    );
-    return result.rows[0];
-};
-
 export const updateProductVariant = async (variantId: number, variant: UpdateProductVariant): Promise<number> => {
     const result = await pool.query(
         'UPDATE product_variant SET variant_name = $1, price = $2, stock_quantity = $3, weight = $4, is_available = $5 WHERE id = $6 RETURNING id',
@@ -228,13 +264,6 @@ export const updateProductVariant = async (variantId: number, variant: UpdatePro
     return result.rows[0].id;
 };
 
-export const createProductImage = async (image: VariantImage): Promise<number> => {
-    const result = await pool.query(
-        'INSERT INTO product_image (variant_id, url, alt_text) VALUES ($1, $2, $3) RETURNING id',
-        [image.variant_id, image.url, image.alt_text]
-    );
-    return result.rows[0].id;
-};
 
 export const updateProductImage = async (imageId: number, image: UpdateVariantImage): Promise<number> => {
     const result = await pool.query(

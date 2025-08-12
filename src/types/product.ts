@@ -15,9 +15,11 @@ export type ProductDataType = {
 };
 
 export type VariantDataType = {
+    id: number;
     product_id: number;
     variantName: string;
     variantPrice: string;
+    variantImage: (string | File) [];
     variantWeight: string;
     variantLength: string;
     variantWidth: string;
