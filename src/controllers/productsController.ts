@@ -3,8 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product, ProductCard, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant } from "../services/productsService";
-import { checkStoreOwner } from "../services/storeService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, checkStoreOwner } from "../services/productsService";
 
 export const getHot = async (req: Request, res: Response) => {
     const limit: number = Number(req.query.limit) || 20;
@@ -47,25 +46,25 @@ export const createAProduct = async (req: Request, res: Response) => {
         await client.query('BEGIN');
 
         if (req.user?.id === undefined) {
-            res.status(400).json({ error: 'User ID is required to update a store.' });
+            res.status(400).json({ error: 'User ID is required to update a product.' });
             return;
         };
 
         const userId: number = req.user?.id;
-        const checkOwner: boolean = await checkStoreOwner(store_id, userId);
-        if (!checkOwner) {
+        const isOwner: boolean = await checkStoreOwner(client, store_id, userId);
+        if (!isOwner) {
             res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
         
-        const newProduct  = await createProduct(req.body);
+        const newProduct  = await createProduct(client, req.body);
         const productId: number = newProduct.id;
 
         let variants = [];
         if (Array.isArray(variant) && variant.length > 0) {
             for (const v of variant) {
                 const variantProduct: VariantDataType = { ...v, product_id: productId };
-                const newVariant = await createProductVariant(variantProduct);
+                const newVariant = await createProductVariant(client, variantProduct);
                 variants.push(newVariant); 
             };
         };
@@ -78,8 +77,8 @@ export const createAProduct = async (req: Request, res: Response) => {
         
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error in the creation of the store:', err);
-        res.status(500).json({error: 'Error in the creation of the store'});
+        console.error('Error creating product:', err);
+        res.status(500).json({error: 'Error creating product'});
     } finally {
         client.release();
     };
