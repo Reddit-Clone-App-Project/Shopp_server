@@ -1,11 +1,11 @@
 export type ProductDataType = {
     name: string;
-    category: string;
+    category: number;
     store_id: number;
     description: string;
     productImage: (string | File)[];
     promotionImage: string | File;
-    price: string;
+    price: number;
     weight: string;
     length: string;
     width: string;
@@ -18,7 +18,7 @@ export type VariantDataType = {
     id: number;
     product_id: number;
     variantName: string;
-    variantPrice: string;
+    variantPrice: number;
     variantImage: (string | File) [];
     variantWeight: string;
     variantLength: string;

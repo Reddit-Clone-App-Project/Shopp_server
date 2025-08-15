@@ -3,7 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product, ProductCard, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, checkStoreOwner } from "../services/productsService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, checkStoreOwner, getCategoryId } from "../services/productsService";
 
 export const getHot = async (req: Request, res: Response) => {
     const limit: number = Number(req.query.limit) || 20;
@@ -39,8 +39,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 
 export const createAProduct = async (req: Request, res: Response) => {
-    const { store_id, variant } = req.body;
-
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -51,13 +50,47 @@ export const createAProduct = async (req: Request, res: Response) => {
         };
 
         const userId: number = req.user?.id;
+
+        const { store_id, productData } = req.body;
+
+        if (!productData) {
+            res.status(400).json({ error: 'Missing productData' });
+            return;
+        }
+
+        let {
+            name,
+            description,
+            category,
+            productImage,
+            promotionImage,
+            price,
+            weight,
+            length,
+            width,
+            height,
+            express,
+            fast,
+            economical,
+            bulky,
+            sku,
+            variant
+        } = productData;
+
+
         const isOwner: boolean = await checkStoreOwner(client, store_id, userId);
         if (!isOwner) {
             res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
-        
-        const newProduct  = await createProduct(client, req.body);
+
+        const categoryId: number = await getCategoryId(client, productData.category);
+        productData.category = categoryId;
+        productData.price = Number(String(productData.price).replace(',', '.'));
+        productData.variant.variantPrice = Number(String(productData.price).replace(',', '.'));
+
+        const newProduct  = await createProduct(client, productData, store_id);
+
         const productId: number = newProduct.id;
 
         let variants = [];
@@ -72,7 +105,7 @@ export const createAProduct = async (req: Request, res: Response) => {
         await client.query('COMMIT');
         res.status(201).json({
             product: newProduct,
-            variants: variants,
+            variants,
         });
         
     } catch (err) {
