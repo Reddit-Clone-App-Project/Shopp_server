@@ -86,8 +86,9 @@ export const createAProduct = async (req: Request, res: Response) => {
         const categoryId: number = await getCategoryId(client, productData.category);
         productData.category = categoryId;
         productData.price = Number(String(productData.price).replace(',', '.'));
+        productData.variant.variantPrice = Number(String(productData.price).replace(',', '.'));
 
-        const newProduct  = await createProduct(client, productData);
+        const newProduct  = await createProduct(client, productData, store_id);
         const productId: number = newProduct.id;
 
         let variants = [];

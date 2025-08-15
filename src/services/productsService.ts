@@ -155,7 +155,7 @@ export const checkStoreOwner = async (client: PoolClient, storeId: number, userI
     const result = await client.query(
         'SELECT app_user_id FROM store_user WHERE store_id = $1',
        [storeId] 
-    );
+    ); 
     const ownerId = result.rows[0]?.app_user_id;
     
     if (ownerId === userId) {
@@ -167,23 +167,29 @@ export const checkStoreOwner = async (client: PoolClient, storeId: number, userI
 
 export const getCategoryId = async (client: PoolClient, name: string): Promise<number> => {
     const result = await client.query(
-        'SELECT id FROM category WHERE slug = $1 RETURNING id',
+        'SELECT id FROM category WHERE slug = $1',
         [name]
     );
-    return result.rows[0]
+    return result.rows[0].id;
 }
 
-export const createProduct = async (client: PoolClient ,data: ProductDataType) => {
-    const categoryId = Number(data.category) || null;
-
+export const createProduct = async (client: PoolClient, data: ProductDataType, store_id: number) => {
+    
     const product = await client.query(
         'INSERT INTO product (name, description, store_id, category_id) VALUES ($1, $2, $3, $4) RETURNING id, name, description, store_id, category_id',
-        [data.name, data.description, data.store_id, data.category]
+        [data.name, data.description, store_id, data.category]
     );
 
+    const lengthN = Number(data.length);
+    const widthN  = Number(data.width);
+    const heightN = Number(data.height);
+    const dimension = [lengthN, widthN, heightN].every(v => Number.isFinite(v) && v > 0)
+        ? lengthN * widthN * heightN
+        : 0;
+
     await client.query(
-        'INSERT INTO product_variant (product_id, price, length, width, height, weight, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, product_id, price, length, width, height, weight, variant_name',
-        [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, data.sku, data.variant[0].variantName]
+        'INSERT INTO product_variant (product_id, price, length, width, height, weight, dimension, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, price, length, width, height, weight, variant_name',
+        [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, dimension, data.sku, data.variant[0].variantName]
     );
 
     if (data.promotionImage) {
@@ -207,14 +213,12 @@ export const createProduct = async (client: PoolClient ,data: ProductDataType) =
 
 export const createProductVariant = async (client: PoolClient, variant: VariantDataType & { product_id: number }) => {
 
-    const price = Number(variant.variantPrice);
-    const weight = Number(variant.variantWeight);
     const length = Number(variant.variantLength);
     const width  = Number(variant.variantWidth);
     const height = Number(variant.variantHeight);
-    const dimension = Number.isFinite(length) && Number.isFinite(width) && Number.isFinite(height)
+    const dimension = [length, width, height].every(v => Number.isFinite(v) && v > 0)
         ? length * width * height
-        : null;
+        : 0;
 
     const newVariant = await client.query(
         'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, variant_name, price, weight, dimension',
