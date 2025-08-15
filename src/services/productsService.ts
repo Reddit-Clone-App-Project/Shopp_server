@@ -165,6 +165,14 @@ export const checkStoreOwner = async (client: PoolClient, storeId: number, userI
     };
 };
 
+export const getCategoryId = async (client: PoolClient, name: string): Promise<number> => {
+    const result = await client.query(
+        'SELECT id FROM category WHERE slug = $1 RETURNING id',
+        [name]
+    );
+    return result.rows[0]
+}
+
 export const createProduct = async (client: PoolClient ,data: ProductDataType) => {
     const categoryId = Number(data.category) || null;
 

@@ -3,7 +3,7 @@ import pool from '../config/db';
 // import {Product, VariantImage, BasicProductVariant, UpdatedProduct, UpdateProduct, UpdateVariantImage, UpdateProductVariant, BasicProduct } from "../types/product";
 // import { getProductProfile, createProduct, updateProduct, createProductVariant, updateProductVariant, createProductImage, updateProductImage, getStoreId, getProductId, deleteProduct, deleteVariant, deleteVariantImage, getHotProducts } from "../services/productsService";
 import { Product, ProductCard, ProductDataType, VariantDataType, BasicProduct } from "../types/product";
-import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, checkStoreOwner } from "../services/productsService";
+import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, checkStoreOwner, getCategoryId } from "../services/productsService";
 
 export const getHot = async (req: Request, res: Response) => {
     const limit: number = Number(req.query.limit) || 20;
@@ -58,10 +58,10 @@ export const createAProduct = async (req: Request, res: Response) => {
             return;
         }
 
-        const {
+        let {
             name,
-            category,
             description,
+            category,
             productImage,
             promotionImage,
             price,
@@ -82,7 +82,10 @@ export const createAProduct = async (req: Request, res: Response) => {
             res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
-        
+
+        const categoryId: number = await getCategoryId(client, productData.category);
+        req.body.category = categoryId;
+
         const newProduct  = await createProduct(client, productData);
         const productId: number = newProduct.id;
 
