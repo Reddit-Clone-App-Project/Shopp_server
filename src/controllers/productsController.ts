@@ -39,8 +39,8 @@ export const getProductById = async (req: Request, res: Response) => {
 
 
 export const createAProduct = async (req: Request, res: Response) => {
-    const { store_id, variant } = req.body;
-
+    console.log(req.body);
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -51,13 +51,39 @@ export const createAProduct = async (req: Request, res: Response) => {
         };
 
         const userId: number = req.user?.id;
+        const { store_id, productData } = req.body;
+
+        if (!productData) {
+            res.status(400).json({ error: 'Missing productData' });
+            return;
+        }
+
+        const {
+            name,
+            category,
+            description,
+            productImage,
+            promotionImage,
+            price,
+            weight,
+            length,
+            width,
+            height,
+            express,
+            fast,
+            economical,
+            bulky,
+            sku,
+            variant
+        } = productData;
+
         const isOwner: boolean = await checkStoreOwner(client, store_id, userId);
         if (!isOwner) {
             res.status(403).json({ error: 'You must be the owner of the store!'});
             return;
         };
         
-        const newProduct  = await createProduct(client, req.body);
+        const newProduct  = await createProduct(client, productData);
         const productId: number = newProduct.id;
 
         let variants = [];
@@ -72,7 +98,7 @@ export const createAProduct = async (req: Request, res: Response) => {
         await client.query('COMMIT');
         res.status(201).json({
             product: newProduct,
-            variants: variants,
+            variants,
         });
         
     } catch (err) {
