@@ -39,7 +39,6 @@ export const getProductById = async (req: Request, res: Response) => {
 
 
 export const createAProduct = async (req: Request, res: Response) => {
-    console.log(req.body);
     
     const client = await pool.connect();
     try {
