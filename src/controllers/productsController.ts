@@ -84,7 +84,8 @@ export const createAProduct = async (req: Request, res: Response) => {
         };
 
         const categoryId: number = await getCategoryId(client, productData.category);
-        req.body.category = categoryId;
+        productData.category = categoryId;
+        productData.price = Number(String(productData.price).replace(',', '.'));
 
         const newProduct  = await createProduct(client, productData);
         const productId: number = newProduct.id;
