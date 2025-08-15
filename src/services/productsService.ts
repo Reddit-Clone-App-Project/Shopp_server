@@ -156,6 +156,7 @@ export const checkStoreOwner = async (client: PoolClient, storeId: number, userI
         'SELECT app_user_id FROM store_user WHERE store_id = $1',
        [storeId] 
     ); 
+
     const ownerId = result.rows[0]?.app_user_id;
     
     if (ownerId === userId) {
@@ -165,13 +166,16 @@ export const checkStoreOwner = async (client: PoolClient, storeId: number, userI
     };
 };
 
+
 export const getCategoryId = async (client: PoolClient, name: string): Promise<number> => {
     const result = await client.query(
         'SELECT id FROM category WHERE slug = $1',
         [name]
+
     );
     return result.rows[0].id;
 }
+
 
 export const createProduct = async (client: PoolClient, data: ProductDataType, store_id: number) => {
     
@@ -191,6 +195,7 @@ export const createProduct = async (client: PoolClient, data: ProductDataType, s
         'INSERT INTO product_variant (product_id, price, length, width, height, weight, dimension, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, price, length, width, height, weight, variant_name',
         [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, dimension, data.sku, data.variant[0].variantName]
     );
+
 
     if (data.promotionImage) {
         await client.query(
@@ -213,12 +218,14 @@ export const createProduct = async (client: PoolClient, data: ProductDataType, s
 
 export const createProductVariant = async (client: PoolClient, variant: VariantDataType & { product_id: number }) => {
 
+
     const length = Number(variant.variantLength);
     const width  = Number(variant.variantWidth);
     const height = Number(variant.variantHeight);
     const dimension = [length, width, height].every(v => Number.isFinite(v) && v > 0)
         ? length * width * height
         : 0;
+
 
     const newVariant = await client.query(
         'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, variant_name, price, weight, dimension',

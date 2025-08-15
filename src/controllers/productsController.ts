@@ -50,6 +50,7 @@ export const createAProduct = async (req: Request, res: Response) => {
         };
 
         const userId: number = req.user?.id;
+
         const { store_id, productData } = req.body;
 
         if (!productData) {
@@ -76,6 +77,7 @@ export const createAProduct = async (req: Request, res: Response) => {
             variant
         } = productData;
 
+
         const isOwner: boolean = await checkStoreOwner(client, store_id, userId);
         if (!isOwner) {
             res.status(403).json({ error: 'You must be the owner of the store!'});
@@ -88,6 +90,7 @@ export const createAProduct = async (req: Request, res: Response) => {
         productData.variant.variantPrice = Number(String(productData.price).replace(',', '.'));
 
         const newProduct  = await createProduct(client, productData, store_id);
+
         const productId: number = newProduct.id;
 
         let variants = [];
