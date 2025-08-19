@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
-import { getCartByUserId, addItemToCartByUserId, removeItemFromCartByUserId } from '../services/cartService';
+import { 
+  getCartByUserId, 
+  addItemToCartByUserId, 
+  removeItemFromCartByUserId,
+  removeAllItemsFromCartByUserId,
+  updateCartItemQuantityByUserId
+} from '../services/cartService';
 
 export const getCart = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -64,6 +70,47 @@ export const removeItem = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json(updatedCart);
   } catch (error) {
     console.error('Error removing item from cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const removeAllItems = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (typeof userId !== 'number') {
+      res.status(400).json({ error: 'Invalid or missing user identifier' });
+      return;
+    }
+
+    await removeAllItemsFromCartByUserId(userId);
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error removing all items from cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateItemQuantity = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { productVariantId, quantity } = req.body;
+
+    if (typeof userId !== 'number') {
+      res.status(400).json({ error: 'Invalid or missing user identifier' });
+      return;
+    }
+
+    if (!productVariantId || typeof quantity !== 'number') {
+      res.status(400).json({ error: 'Missing or invalid required fields' });
+      return;
+    }
+
+    // Call the new service function to update the quantity
+    const updatedCart = await updateCartItemQuantityByUserId(userId, productVariantId, quantity);
+    res.status(200).json(updatedCart);
+  } catch (error) {
+    console.error('Error updating item quantity:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
