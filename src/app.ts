@@ -9,6 +9,7 @@ import productRoutes from './routes/productRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 import refreshTokenRoutes from './routes/refreshTokenRoutes';
 import cartRoutes from './routes/cartRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middlewares/rateLimiter';
@@ -37,6 +38,7 @@ app.use('/cart', cartRoutes);
 app.use('/store', storeRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
+app.use('/payment', paymentRoutes);
 
 export default app;
 
