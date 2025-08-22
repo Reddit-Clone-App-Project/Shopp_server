@@ -248,3 +248,10 @@ export const getDiscountsByStoreId = async (storeId: number) => {
     return result.rows;
 }
 
+export const getAllProducts = async (storeId: number, limit: number, offset: number) => {
+    const result = await pool.query(
+        'SELECT * FROM product WHERE store_id = $1 LIMIT $2 OFFSET $3',
+        [storeId, limit, offset]
+    );
+    return result.rows;
+}

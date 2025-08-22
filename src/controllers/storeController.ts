@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned, getAllProducts } from "../services/storeService";
 import { ProductCard } from "../types/product";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
@@ -222,3 +222,16 @@ export const getStoreProductsBought = async ( req: Request, res: Response ) => {
         res.status(500).json({ error: "Error cannot get store products" });
     };
 }
+
+export const getStoreProductsById = async ( req: Request, res: Response ) => {
+    const storeId = Number(req.params.id);
+    const limit = Number(req.query.limit) || 5;
+    const offset = Number(req.query.offset) || 0;
+    try {
+        const products = await getAllProducts(storeId, limit, offset);
+        res.status(200).json(products);
+    }   catch (err) {
+        console.error('Error cannot get store products', err);
+        res.status(500).json({ error: 'Error cannot get store products' });
+    };
+};
