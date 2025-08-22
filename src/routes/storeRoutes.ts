@@ -6,8 +6,8 @@ import { authLimiter } from "../middlewares/rateLimiter";
 const router = express.Router();
 
 router.post('/', authLimiter, authenticateToken, registerStore);
+router.get('/my-store', authenticateToken, getStoreByOwnerId);
 router.get('/:id', getStoreById);
-router.get('/my-store', authenticateToken, getStoreByOwnerId)
 router.put('/:id', authenticateToken, updateStore);
 router.delete('/:id', authenticateToken, deleteStore);
 
