@@ -13,6 +13,7 @@ import paymentRoutes from './routes/paymentRoutes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middlewares/rateLimiter';
+import { handleWebhook } from './controllers/webhookController';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -24,9 +25,10 @@ const app = express();
 app.use(cors(corsOptions));
 app.use(helmet());
 app.use(globalLimiter);
+app.disable('x-powered-by');
+app.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 app.use(express.json());
 app.use(cookieParser());
-app.disable('x-powered-by');
 
 app.use('/refresh', refreshTokenRoutes);
 
@@ -40,5 +42,7 @@ app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/payment', paymentRoutes);
 
+
 export default app;
 
+    

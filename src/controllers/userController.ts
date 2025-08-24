@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import pool from "../config/db";
 import { User } from "../types/users";
 import {
   assignRefreshTokenToDB,
@@ -11,7 +12,12 @@ import {
   updateUserById,
   deleteUserById,
   getUserById,
-  getAddressByUserId
+  getAddressesByUserId,
+  addAddressByUserId,
+  removeAddressById,
+  updateAddressById,
+  setAllIsDefaultFalse,
+  setAddressIsDefaultTrue
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -72,7 +78,7 @@ export const updateProfile = async (
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
   }
-  const { fullname, phone_number, email, birthdate, avatarImg } = req.body;
+  const { fullname, phone_number, email, birthdate, avatarImg, gender } = req.body;
   const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
@@ -84,6 +90,7 @@ export const updateProfile = async (
       birthdate,
       avatarImg,
       userId: req.user?.id,
+      gender: gender || null
     });
 
     if (!updatedUser) {
@@ -199,22 +206,142 @@ export const logoutUser = async (req: Request, res: Response) => {
   ADDRESS
 */
 
-export const getAddressById = async (req: Request, res: Response) => {
+export const getAddressesById = async (req: Request, res: Response) => {
   try {
     if (typeof req.user?.id !== "number") {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
-    const address = await getAddressByUserId(req.user?.id);
+    const addresses = await getAddressesByUserId(req.user?.id);
 
-    if (!address) {
-      res.status(404).json({ error: "Address not found" });
+    if (!addresses) {
+      res.status(404).json({ error: "Addresses not found" });
       return;
     }
 
-    res.status(200).json(address);
+    res.status(200).json(addresses);
   } catch (err) {
     console.error("Error cannot get user address", err);
     res.status(500).json({ error: "Error cannot get user address" });
   }
 };
+
+export const addAddress = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  const {full_name, address_line1, address_line2, city, province, postal_code, country, phone_number, is_default} = req.body;
+  try {
+    await client.query('BEGIN');
+    if(typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    if(is_default === true){
+      await setAllIsDefaultFalse(req.user.id);
+    }
+          
+    const newAddress = await addAddressByUserId(
+      {
+        full_name,
+        address_line1,
+        address_line2,
+        city,
+        province,
+        postal_code,
+        country,
+        phone_number,
+        is_default,
+        id: req.user.id
+      }
+    );
+    if (!newAddress) {
+      res.status(500).json({ error: "Error cannot add user address" });
+      return;
+    }
+
+    res.status(201).json(newAddress);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error("Error cannot add user address", err);
+    res.status(500).json({ error: "Error cannot add user address" });
+  } finally {
+    client.release();
+  }
+}
+
+export const updateAddress = async (req: Request, res: Response) => {
+  try{
+    if(!req.params.id){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const {full_name, address_line1, address_line2, city, province, postal_code, country, phone_number} = req.body;
+
+    const updatedAddress = await updateAddressById(
+      {
+        address_id: parseInt(req.params.id),
+        full_name,
+        address_line1,
+        address_line2,
+        city,
+        province,
+        postal_code,
+        country,
+        phone_number
+      }
+    );
+
+    if (!updatedAddress) {
+      res.status(404).json({ error: "Address not found" });
+      return;
+    }
+
+    res.status(200).json(updatedAddress);
+  }catch(err){
+    console.error("Error cannot update user address", err);
+    res.status(500).json({ error: "Error cannot update user address" });
+  }
+}
+
+export const removeAnAddress = async (req: Request, res: Response) => {
+  try{
+    if(!req.params.id){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    await removeAddressById(parseInt(req.params.id));
+    res.status(204).send();
+
+  }catch(err){
+    console.error("Error cannot delete user address", err);
+    res.status(500).json({ error: "Error cannot delete user address" });
+  }
+}
+
+export const setAddressIsDefaultToTrue = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try{
+    await client.query('BEGIN');
+    if(!req.params.id){
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    if(typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    await setAllIsDefaultFalse(req.user.id);
+    await setAddressIsDefaultTrue(parseInt(req.params.id));
+    res.status(204).send();
+
+  }catch(err){
+    await client.query('ROLLBACK');
+    console.error("Error cannot set address as default", err);
+    res.status(500).json({ error: "Error cannot set address as default" });
+  }finally{
+    client.release();
+  }
+}

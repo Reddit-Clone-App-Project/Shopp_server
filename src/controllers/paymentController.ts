@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-
+import { stripe } from '../config/stripe';
 interface CheckoutItem {
     product_name: String, 
     image_url: String, 
@@ -36,4 +33,4 @@ export const createCheckoutSession = async(req: Request, res: Response) => {
     });
 
     res.json({ id: session.id });
-}
+};

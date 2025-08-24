@@ -1,5 +1,5 @@
 import pool from '../config/db';
-import { User, NewUser, UpdateUser, UserAddress } from '../types/users';
+import { User, NewUser, UpdateUser, UserAddress, UpdateUserAddress } from '../types/users';
 import validator  from 'validator';
 
 export const createUser = async (user: NewUser) => {
@@ -19,18 +19,10 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
     return result.rows[0];
 };
 
-export const getAddressByUserId = async (userId: number): Promise<UserAddress | undefined> => {
-    const result = await pool.query(
-        'SELECT * FROM address WHERE app_user_id = $1 AND is_default = true',
-        [userId]
-    );
-    return result.rows[0];
-}
-
 export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
     const result = await pool.query(
-        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, updated_at = NOW() WHERE id = $6 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img',
-        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.userId]
+        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, gender = $6, updated_at = NOW() WHERE id = $7 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img, gender',
+        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.gender, user.userId]
     );
     return result.rows[0];
 };
@@ -44,7 +36,51 @@ export const deleteUserById = async (userId: number): Promise<number | null> => 
     return result.rowCount;
 };
 
+export const getAddressesByUserId = async (userId: number): Promise<UserAddress[] | undefined> => {
+    // This gets the default address of the user
+    const result = await pool.query(
+        'SELECT * FROM address WHERE app_user_id = $1',
+        [userId]
+    );
+    return result.rows;
+}
 
+export const addAddressByUserId = async (address: UserAddress): Promise<UserAddress | undefined> => {
+    const result = await pool.query(
+        'INSERT INTO address (full_name, address_line1, address_line2, city, province, postal_code, country, phone_number, is_default, app_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+        [address.full_name, address.address_line1, address.address_line2, address.city, address.province, address.postal_code, address.country, address.phone_number, address.is_default, address.id]
+    );
+    return result.rows[0];
+};
+
+export const updateAddressById = async (address: UpdateUserAddress): Promise<UserAddress | undefined> => {
+    const result = await pool.query(
+        'UPDATE address SET full_name = $1, address_line1 = $2, address_line2 = $3, city = $4, province = $5, postal_code = $6, country = $7, phone_number = $8 WHERE id = $9 RETURNING *',
+        [address.full_name, address.address_line1, address.address_line2, address.city, address.province, address.postal_code, address.country, address.phone_number, address.address_id]
+    );
+    return result.rows[0];
+};
+
+export const removeAddressById = async (addressId: number) => {
+    await pool.query(
+        'DELETE FROM address WHERE id = $1',
+        [addressId]
+    );
+};
+
+export const setAllIsDefaultFalse = async (userId: number) => {
+    await pool.query(
+        'UPDATE address SET is_default = false WHERE app_user_id = $1',
+        [userId]
+    );
+}
+
+export const setAddressIsDefaultTrue = async (addressId: number) => {
+    await pool.query(
+        'UPDATE address SET is_default = true WHERE id = $1',
+        [addressId]
+    );
+}
 /*
 !The functions below are deprecated(Code and types are updated, so if want to reuse this code, must look at it carefully) and unnecessary, may be removed, or changed in the future
 export const getUserByEOrP = async (eOrP: string): Promise<User | undefined> => {

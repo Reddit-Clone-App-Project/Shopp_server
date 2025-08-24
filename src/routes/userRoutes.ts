@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, getProfile, updateProfile, deleteProfile, loginUser, logoutUser, getAddressById } from '../controllers/userController';
+import { registerUser, getProfile, updateProfile, deleteProfile, loginUser, logoutUser, getAddressesById, addAddress, removeAnAddress, updateAddress, setAddressIsDefaultToTrue } from '../controllers/userController';
 import { authenticateToken } from '../middlewares/authenticateToken';
 import { authLimiter } from '../middlewares/rateLimiter';
 import { validateRegister, validateLogin } from '../middlewares/validator';
@@ -16,7 +16,11 @@ router.delete('/me', authenticateToken, deleteProfile);
 /*
     Address
 */
-router.get('/me/address', authenticateToken, getAddressById);
+router.get('/me/address', authenticateToken, getAddressesById);
+router.post('/me/address', authenticateToken, addAddress);
+router.put('/me/address/:id', authenticateToken, updateAddress);
+router.put('/me/address/default/:id', authenticateToken, setAddressIsDefaultToTrue);
+router.delete('/me/address/:id', authenticateToken, removeAnAddress);
 
 
 export default router;
