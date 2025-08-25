@@ -259,7 +259,18 @@ export const addAddress = async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(201).json(newAddress);
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const addresses = await getAddressesByUserId(req.user?.id);
+
+    if (!addresses) {
+      res.status(404).json({ error: "Addresses not found" });
+      return;
+    }
+
+    res.status(201).json(addresses);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error("Error cannot add user address", err);
@@ -296,7 +307,18 @@ export const updateAddress = async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(200).json(updatedAddress);
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const addresses = await getAddressesByUserId(req.user?.id);
+
+    if (!addresses) {
+      res.status(404).json({ error: "Addresses not found" });
+      return;
+    }
+
+    res.status(200).json(addresses);
   }catch(err){
     console.error("Error cannot update user address", err);
     res.status(500).json({ error: "Error cannot update user address" });
@@ -311,7 +333,7 @@ export const removeAnAddress = async (req: Request, res: Response) => {
     }
 
     await removeAddressById(parseInt(req.params.id));
-    res.status(204).send();
+    res.status(200).json({ id: parseInt(req.params.id) });
 
   }catch(err){
     console.error("Error cannot delete user address", err);
@@ -335,7 +357,18 @@ export const setAddressIsDefaultToTrue = async (req: Request, res: Response) => 
 
     await setAllIsDefaultFalse(req.user.id);
     await setAddressIsDefaultTrue(parseInt(req.params.id));
-    res.status(204).send();
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+    const addresses = await getAddressesByUserId(req.user?.id);
+
+    if (!addresses) {
+      res.status(404).json({ error: "Addresses not found" });
+      return;
+    }
+
+    res.status(200).json(addresses);
 
   }catch(err){
     await client.query('ROLLBACK');
