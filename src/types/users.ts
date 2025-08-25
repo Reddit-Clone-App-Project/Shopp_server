@@ -19,12 +19,13 @@ export type User = {
   birthdate: string;
   gender: 'male' | 'female' | 'other' | null;
   refresh_token?: string;
+  profile_img?: string;
 };
 
 export type UpdateUser = {
+    username: string;
     fullname: string;
     birthdate: string;
-    avatarImg: string;
     userId: number;
     phone_number: string;
     email: string;

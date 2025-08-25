@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import pool from "../config/db";
 import { User } from "../types/users";
+
 import {
   assignRefreshTokenToDB,
   validationUser,
@@ -17,16 +18,18 @@ import {
   removeAddressById,
   updateAddressById,
   setAllIsDefaultFalse,
-  setAddressIsDefaultTrue
+  setAddressIsDefaultTrue,
+  updateUserAvatarById,
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import parsePhoneNumberFromString from "libphonenumber-js";
-
+import { bucket } from "../config/gcs";
 
 export const registerUser = async (req: Request, res: Response) => {
   const { email, phone_number, password, role } = req.body;
-  const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
+  const nationality: string | null =
+    parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -75,22 +78,23 @@ export const updateProfile = async (
   res: Response
 ): Promise<void> => {
   if (typeof req.user?.id !== "number") {
-      res.status(400).json({ error: "Invalid or missing identifier" });
-      return;
+    res.status(400).json({ error: "Invalid or missing identifier" });
+    return;
   }
-  const { fullname, phone_number, email, birthdate, avatarImg, gender } = req.body;
-  const nationality: string | null = parsePhoneNumberFromString(phone_number)?.country ?? null;
+  const { username, fullname, phone_number, email, birthdate, gender } = req.body;
+  const nationality: string | null =
+    parsePhoneNumberFromString(phone_number)?.country ?? null;
 
   try {
     const updatedUser = await updateUserById({
+      username,
       fullname,
       nationality,
       email,
       phone_number,
       birthdate,
-      avatarImg,
       userId: req.user?.id,
-      gender: gender || null
+      gender: gender || null,
     });
 
     if (!updatedUser) {
@@ -98,10 +102,54 @@ export const updateProfile = async (
       return;
     }
 
-    res.status(200).json(updatedUser);
+    const { password, refresh_token, ...userSafe } = updatedUser;
+
+    res.status(200).json(userSafe);
   } catch (err) {
     console.error("Error cannot update user profile", err);
     res.status(500).json({ error: "Error cannot update user profile" });
+  }
+};
+
+export const uploadAvatar = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "file required" });
+      return;
+    }
+
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    const userId = req.user.id;
+    const user = await getUserById(userId);
+
+    if (user && user.profile_img) {
+      const oldAvatarUrl = user.profile_img;
+      const oldAvatarKey = oldAvatarUrl.split(`${bucket.name}/`)[1];
+      await bucket.file(oldAvatarKey).delete();
+    }
+
+    const key = `avatar-images/${Date.now()}_${req.user?.id}.jpg`;
+    const file = bucket.file(key);
+
+    await file.save(req.file.buffer, {
+      resumable: false,
+      contentType: req.file.mimetype,
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${key}`;
+
+    const updateUser = await updateUserAvatarById(userId, publicUrl);
+
+    const { password, refresh_token, ...userSafe } = updateUser;
+
+    res.status(200).json(userSafe);
+  } catch (error) {
+    console.error("Error uploading avatar image:", error);
+    res.status(500).json({ error: "Error uploading avatar image" });
   }
 };
 
@@ -167,7 +215,10 @@ export const loginUser = async (req: Request, res: Response) => {
 
     assignRefreshTokenToDB(id, refreshToken);
 
-    res.cookie("jwt", refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    }); // 1 day
     res.status(200).json({ accessToken });
   } catch (err) {
     console.error("User cannot get verified", err);
@@ -176,31 +227,30 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 export const logoutUser = async (req: Request, res: Response) => {
-  const refreshToken = req.cookies['jwt'];
-      if (!refreshToken) {
-          res.status(401).json({ error: 'Refresh token not found' });
-          return;
-      }
-  
-      if (!process.env.REFRESH_TOKEN_SECRET) {
-          console.error("JWT secrets are not defined in environment variables");
-          res.status(500).json({ error: "Internal server configuration error" });
-          return;
-      }
-  
-      const foundUser = getUserByRefreshToken(refreshToken);
-      if (!foundUser) {
-          res.clearCookie('jwt', { httpOnly: true });
-          res.status(403).json({ message: 'Forbidden' });
-          return;
-      }
-  
-      // Delete the refresh token from the database
-      await removeRefreshTokenFromDB(refreshToken);
-      res.clearCookie('jwt', { httpOnly: true });
-      res.status(200).json({ message: 'User logged out successfully' });
-}
+  const refreshToken = req.cookies["jwt"];
+  if (!refreshToken) {
+    res.status(401).json({ error: "Refresh token not found" });
+    return;
+  }
 
+  if (!process.env.REFRESH_TOKEN_SECRET) {
+    console.error("JWT secrets are not defined in environment variables");
+    res.status(500).json({ error: "Internal server configuration error" });
+    return;
+  }
+
+  const foundUser = getUserByRefreshToken(refreshToken);
+  if (!foundUser) {
+    res.clearCookie("jwt", { httpOnly: true });
+    res.status(403).json({ message: "Forbidden" });
+    return;
+  }
+
+  // Delete the refresh token from the database
+  await removeRefreshTokenFromDB(refreshToken);
+  res.clearCookie("jwt", { httpOnly: true });
+  res.status(200).json({ message: "User logged out successfully" });
+};
 
 /*
   ADDRESS
@@ -228,32 +278,40 @@ export const getAddressesById = async (req: Request, res: Response) => {
 
 export const addAddress = async (req: Request, res: Response) => {
   const client = await pool.connect();
-  const {full_name, address_line1, address_line2, city, province, postal_code, country, phone_number, is_default} = req.body;
+  const {
+    full_name,
+    address_line1,
+    address_line2,
+    city,
+    province,
+    postal_code,
+    country,
+    phone_number,
+    is_default,
+  } = req.body;
   try {
-    await client.query('BEGIN');
-    if(typeof req.user?.id !== "number") {
+    await client.query("BEGIN");
+    if (typeof req.user?.id !== "number") {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
 
-    if(is_default === true){
+    if (is_default === true) {
       await setAllIsDefaultFalse(req.user.id);
     }
-          
-    const newAddress = await addAddressByUserId(
-      {
-        full_name,
-        address_line1,
-        address_line2,
-        city,
-        province,
-        postal_code,
-        country,
-        phone_number,
-        is_default,
-        id: req.user.id
-      }
-    );
+
+    const newAddress = await addAddressByUserId({
+      full_name,
+      address_line1,
+      address_line2,
+      city,
+      province,
+      postal_code,
+      country,
+      phone_number,
+      is_default,
+      id: req.user.id,
+    });
     if (!newAddress) {
       res.status(500).json({ error: "Error cannot add user address" });
       return;
@@ -272,35 +330,42 @@ export const addAddress = async (req: Request, res: Response) => {
 
     res.status(201).json(addresses);
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     console.error("Error cannot add user address", err);
     res.status(500).json({ error: "Error cannot add user address" });
   } finally {
     client.release();
   }
-}
+};
 
 export const updateAddress = async (req: Request, res: Response) => {
-  try{
-    if(!req.params.id){
+  try {
+    if (!req.params.id) {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
-    const {full_name, address_line1, address_line2, city, province, postal_code, country, phone_number} = req.body;
+    const {
+      full_name,
+      address_line1,
+      address_line2,
+      city,
+      province,
+      postal_code,
+      country,
+      phone_number,
+    } = req.body;
 
-    const updatedAddress = await updateAddressById(
-      {
-        address_id: parseInt(req.params.id),
-        full_name,
-        address_line1,
-        address_line2,
-        city,
-        province,
-        postal_code,
-        country,
-        phone_number
-      }
-    );
+    const updatedAddress = await updateAddressById({
+      address_id: parseInt(req.params.id),
+      full_name,
+      address_line1,
+      address_line2,
+      city,
+      province,
+      postal_code,
+      country,
+      phone_number,
+    });
 
     if (!updatedAddress) {
       res.status(404).json({ error: "Address not found" });
@@ -319,38 +384,40 @@ export const updateAddress = async (req: Request, res: Response) => {
     }
 
     res.status(200).json(addresses);
-  }catch(err){
+  } catch (err) {
     console.error("Error cannot update user address", err);
     res.status(500).json({ error: "Error cannot update user address" });
   }
-}
+};
 
 export const removeAnAddress = async (req: Request, res: Response) => {
-  try{
-    if(!req.params.id){
+  try {
+    if (!req.params.id) {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
 
     await removeAddressById(parseInt(req.params.id));
     res.status(200).json({ id: parseInt(req.params.id) });
-
-  }catch(err){
+  } catch (err) {
     console.error("Error cannot delete user address", err);
     res.status(500).json({ error: "Error cannot delete user address" });
   }
-}
+};
 
-export const setAddressIsDefaultToTrue = async (req: Request, res: Response) => {
+export const setAddressIsDefaultToTrue = async (
+  req: Request,
+  res: Response
+) => {
   const client = await pool.connect();
-  try{
-    await client.query('BEGIN');
-    if(!req.params.id){
+  try {
+    await client.query("BEGIN");
+    if (!req.params.id) {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
 
-    if(typeof req.user?.id !== "number") {
+    if (typeof req.user?.id !== "number") {
       res.status(400).json({ error: "Invalid or missing identifier" });
       return;
     }
@@ -369,12 +436,11 @@ export const setAddressIsDefaultToTrue = async (req: Request, res: Response) => 
     }
 
     res.status(200).json(addresses);
-
-  }catch(err){
-    await client.query('ROLLBACK');
+  } catch (err) {
+    await client.query("ROLLBACK");
     console.error("Error cannot set address as default", err);
     res.status(500).json({ error: "Error cannot set address as default" });
-  }finally{
+  } finally {
     client.release();
   }
-}
+};

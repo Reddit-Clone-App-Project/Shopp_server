@@ -19,14 +19,21 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
     return result.rows[0];
 };
 
-export const updateUserById = async (user: UpdateUser): Promise<UpdateUser | undefined>  => {
+export const updateUserById = async (user: UpdateUser)  => {
     const result = await pool.query(
-        'UPDATE app_user SET full_name = $1, phone_number = $2, nationality = $3, date_of_birth = $4, profile_img = $5, gender = $6, updated_at = NOW() WHERE id = $7 RETURNING id, full_name, phone_number, nationality, date_of_birth, profile_img, gender',
-        [user.fullname, user.phone_number, user.nationality, user.birthdate, user.avatarImg, user.gender, user.userId]
+        'UPDATE app_user SET username = $1, full_name = $2, phone_number = $3, nationality = $4, date_of_birth = $5, gender = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
+        [user.username, user.fullname, user.phone_number, user.nationality, user.birthdate, user.gender, user.userId]
     );
     return result.rows[0];
 };
 
+export const updateUserAvatarById = async (userId: number, avatarUrl: string) => {
+    const result = await pool.query(
+        'UPDATE app_user SET profile_img = $1 WHERE id = $2 RETURNING *',
+        [avatarUrl, userId]
+    );
+    return result.rows[0];
+}
 
 export const deleteUserById = async (userId: number): Promise<number | null> => {
     const result = await pool.query(
