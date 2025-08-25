@@ -81,20 +81,15 @@ export const updateProfile = async (
     res.status(400).json({ error: "Invalid or missing identifier" });
     return;
   }
-  const { username, fullname, phone_number, email, birthdate, gender } = req.body;
-  const nationality: string | null =
-    parsePhoneNumberFromString(phone_number)?.country ?? null;
+  const { username, full_name, date_of_birth, gender } = req.body;
 
   try {
     const updatedUser = await updateUserById({
       username,
-      fullname,
-      nationality,
-      email,
-      phone_number,
-      birthdate,
+      fullname: full_name,
+      birthdate: date_of_birth,
       userId: req.user?.id,
-      gender: gender || null,
+      gender,
     });
 
     if (!updatedUser) {

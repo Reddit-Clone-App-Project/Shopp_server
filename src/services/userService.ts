@@ -21,8 +21,8 @@ export const getUserById = async (userId: number): Promise<User | undefined> => 
 
 export const updateUserById = async (user: UpdateUser)  => {
     const result = await pool.query(
-        'UPDATE app_user SET username = $1, full_name = $2, phone_number = $3, nationality = $4, date_of_birth = $5, gender = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
-        [user.username, user.fullname, user.phone_number, user.nationality, user.birthdate, user.gender, user.userId]
+        'UPDATE app_user SET username = $1, full_name = $2, date_of_birth = $3, gender = $4, updated_at = NOW() WHERE id = $5 RETURNING *',
+        [user.username, user.fullname, user.birthdate, user.gender, user.userId]
     );
     return result.rows[0];
 };

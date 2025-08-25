@@ -27,9 +27,6 @@ export type UpdateUser = {
     fullname: string;
     birthdate: string;
     userId: number;
-    phone_number: string;
-    email: string;
-    nationality: string | null;
     gender: 'male' | 'female' | 'other' | null;
 }
 
