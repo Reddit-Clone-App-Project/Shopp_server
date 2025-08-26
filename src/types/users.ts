@@ -20,6 +20,8 @@ export type User = {
   gender: 'male' | 'female' | 'other' | null;
   refresh_token?: string;
   profile_img?: string;
+  otp?: string;
+  otp_expires_at?: Date;
 };
 
 export type UpdateUser = {

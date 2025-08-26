@@ -9,7 +9,7 @@ export const validationUser = async (eOrP: string): Promise<{id: number, databas
             'SELECT id, password, role FROM app_user WHERE email = $1',
             [eOrP]
         );
-    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
+    } else if (validator.isMobilePhone(eOrP.replace(/[\s-()]/g, ''), 'any', { strictMode: false })) {
         result = await pool.query(
             'SELECT id, password, role FROM app_user WHERE phone_number = $1',
             [eOrP]
