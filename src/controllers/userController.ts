@@ -20,6 +20,8 @@ import {
   setAllIsDefaultFalse,
   setAddressIsDefaultTrue,
   updateUserAvatarById,
+  changeUserPassword,
+  updateUserPhoneNumber
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -37,7 +39,7 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       phone_number,
       password: hashedPassword,
-      role,
+      role: role ? role : "buyer",
       nationality,
     });
     res.status(201).json(newUser);
@@ -65,7 +67,7 @@ export const getProfile = async (
       return;
     }
 
-    const { password, refresh_token, ...userSafe } = user;
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = user;
     res.status(200).json(userSafe);
   } catch (err) {
     console.error("Error cannot get user profile", err);
@@ -97,12 +99,95 @@ export const updateProfile = async (
       return;
     }
 
-    const { password, refresh_token, ...userSafe } = updatedUser;
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = updatedUser;
 
     res.status(200).json(userSafe);
   } catch (err) {
     console.error("Error cannot update user profile", err);
     res.status(500).json({ error: "Error cannot update user profile" });
+  }
+};
+
+export const passwordChange = async (req: Request, res: Response) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    res.status(400).json({ error: "Old and new passwords are required" });
+    return;
+  }
+
+  try {
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    const userId = req.user.id;
+
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      res.status(401).json({ error: "Old password is incorrect" });
+      return;
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = await changeUserPassword(userId, hashedNewPassword);
+
+    if (!updatedUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = updatedUser;
+
+    res.status(200).json(userSafe);
+  } catch (err) {
+    console.error("Error cannot change user password", err);
+    res.status(500).json({ error: "Error cannot change user password" });
+  }
+};
+
+export const changePhoneNumber = async (req: Request, res: Response) => {
+  const { newPhoneNumber } = req.body;
+
+  if (!newPhoneNumber) {
+    res.status(400).json({ error: "New phone number is required" });
+    return;
+  }
+
+  try {
+    if (typeof req.user?.id !== "number") {
+      res.status(400).json({ error: "Invalid or missing identifier" });
+      return;
+    }
+
+    const userId = req.user.id;
+
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const updatedUser = await updateUserPhoneNumber(userId, newPhoneNumber);
+
+    if (!updatedUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = updatedUser;
+
+    res.status(200).json(userSafe);
+  } catch (err) {
+    console.error("Error cannot change user phone number", err);
+    res.status(500).json({ error: "Error cannot change user phone number" });
   }
 };
 
@@ -139,7 +224,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
 
     const updateUser = await updateUserAvatarById(userId, publicUrl);
 
-    const { password, refresh_token, ...userSafe } = updateUser;
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = updateUser;
 
     res.status(200).json(userSafe);
   } catch (error) {

@@ -14,6 +14,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middlewares/rateLimiter';
 import { handleWebhook } from './controllers/webhookController';
+import emailOtpRoutes from './routes/emailOtpRoutes';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -41,6 +42,7 @@ app.use('/store', storeRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/payment', paymentRoutes);
+app.use('/email-otp', emailOtpRoutes);
 
 
 export default app;
