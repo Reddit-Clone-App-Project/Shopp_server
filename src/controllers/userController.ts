@@ -21,7 +21,8 @@ import {
   setAddressIsDefaultTrue,
   updateUserAvatarById,
   changeUserPassword,
-  updateUserPhoneNumber
+  updateUserPhoneNumber,
+  changeNotificationSettings
 } from "../services/userService";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -188,6 +189,31 @@ export const changePhoneNumber = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Error cannot change user phone number", err);
     res.status(500).json({ error: "Error cannot change user phone number" });
+  }
+};
+
+export const saveNotificationSettings = async (req: Request, res: Response) => {
+  const { email_notification, order_update, promotion_update } = req.body;
+
+  if (typeof req.user?.id !== "number") {
+    res.status(400).json({ error: "Invalid or missing identifier" });
+    return;
+  }
+
+  try {
+    const updatedUser = await changeNotificationSettings(req.user.id, email_notification, order_update, promotion_update);
+
+    if (!updatedUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const { password, refresh_token, otp, otp_expires_at, ...userSafe } = updatedUser;
+
+    res.status(200).json(userSafe);
+  } catch (err) {
+    console.error("Error cannot change user notification settings", err);
+    res.status(500).json({ error: "Error cannot change user notification settings" });
   }
 };
 
