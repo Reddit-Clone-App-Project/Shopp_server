@@ -217,15 +217,12 @@ export const createProduct = async (client: PoolClient, data: ProductDataType, s
 };
 
 export const createProductVariant = async (client: PoolClient, variant: VariantDataType & { product_id: number }) => {
-
-
     const length = Number(variant.variantLength);
     const width  = Number(variant.variantWidth);
     const height = Number(variant.variantHeight);
     const dimension = [length, width, height].every(v => Number.isFinite(v) && v > 0)
         ? length * width * height
         : 0;
-
 
     const newVariant = await client.query(
         'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, variant_name, price, weight, dimension',
@@ -236,11 +233,21 @@ export const createProductVariant = async (client: PoolClient, variant: VariantD
 
     if (Array.isArray(variant.variantImage) && variant.variantImage.length > 0) {
         for (const url of variant.variantImage) {
-            await client.query(
-                'INSERT INTO product_image (product_id, product_variant_id, url) VALUES ($1, $2, $3)',
-                [variant.product_id, variant.id, url]
-            );
-        };
+            if (url && typeof url === 'string' && url.trim() !== '') {
+                try {
+                    await client.query(
+                        'INSERT INTO product_image (product_id, product_variant_id, url) VALUES ($1, $2, $3)',
+                        [variant.product_id, newVariantId, url]
+                    );
+                } catch (error: any) {
+                    if (error.code === '23505') {
+                        console.error(`Duplicate image for variant_id=${newVariantId} and url='${url}'`);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        }
     }
 
     return newVariant.rows[0];
