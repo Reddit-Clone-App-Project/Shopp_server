@@ -326,6 +326,7 @@ export const logoutUser = async (req: Request, res: Response) => {
     return;
   }
 
+
   // Delete the refresh token from the database
   await removeRefreshTokenFromDB(refreshToken);
   res.clearCookie("jwt", { httpOnly: true });

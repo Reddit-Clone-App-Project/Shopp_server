@@ -33,7 +33,7 @@ export const updateUserAvatarById = async (userId: number, avatarUrl: string) =>
         [avatarUrl, userId]
     );
     return result.rows[0];
-}
+};
 
 export const updateUserPhoneNumber = async (userId: number, newPhoneNumber: string) => {
     const result = await pool.query(
@@ -50,6 +50,7 @@ export const changeUserPassword = async (userId: number, newHashedPassword: stri
     );
     return result.rows[0];
 };
+
 
 export const deleteUserById = async (userId: number): Promise<number | null> => {
     const result = await pool.query(

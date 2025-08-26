@@ -17,6 +17,7 @@ router.put('/me', authenticateToken, updateProfile);
 router.post('/me/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 router.put('/me/password', authenticateToken, passwordChange);
 router.put('/me/phone', authenticateToken, changePhoneNumber);
+
 router.delete('/me', authenticateToken, deleteProfile);
 
 /*

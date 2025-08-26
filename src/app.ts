@@ -16,6 +16,7 @@ import { globalLimiter } from './middlewares/rateLimiter';
 import { handleWebhook } from './controllers/webhookController';
 import emailOtpRoutes from './routes/emailOtpRoutes';
 
+
 const corsOptions = {
     origin: 'http://localhost:5173',
     credentials: true,
@@ -43,6 +44,7 @@ app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/payment', paymentRoutes);
 app.use('/email-otp', emailOtpRoutes);
+
 
 
 export default app;
