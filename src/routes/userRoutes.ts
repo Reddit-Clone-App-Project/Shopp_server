@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerUser, getProfile, updateProfile, uploadAvatar, deleteProfile, loginUser, logoutUser, getAddressesById, addAddress, removeAnAddress, updateAddress, setAddressIsDefaultToTrue, passwordChange, changePhoneNumber } from '../controllers/userController';
+import { registerUser, getProfile, updateProfile, uploadAvatar, deleteProfile, loginUser, logoutUser, getAddressesById, addAddress, removeAnAddress, updateAddress, setAddressIsDefaultToTrue, passwordChange, changePhoneNumber, saveNotificationSettings } from '../controllers/userController';
 import { authenticateToken } from '../middlewares/authenticateToken';
 import { authLimiter } from '../middlewares/rateLimiter';
 import { validateRegister } from '../middlewares/validator';
@@ -17,7 +17,7 @@ router.put('/me', authenticateToken, updateProfile);
 router.post('/me/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 router.put('/me/password', authenticateToken, passwordChange);
 router.put('/me/phone', authenticateToken, changePhoneNumber);
-
+router.put('/me/notifications', authenticateToken, saveNotificationSettings);
 router.delete('/me', authenticateToken, deleteProfile);
 
 /*

@@ -22,6 +22,9 @@ export type User = {
   profile_img?: string;
   otp?: string;
   otp_expires_at?: Date;
+  email_notification: boolean;
+  order_update: boolean;
+  promotion_update: boolean;
 };
 
 export type UpdateUser = {

@@ -51,6 +51,13 @@ export const changeUserPassword = async (userId: number, newHashedPassword: stri
     return result.rows[0];
 };
 
+export const changeNotificationSettings = async (userId: number, emailNotification: boolean, orderUpdate: boolean, promotionUpdate: boolean) => {
+    const result = await pool.query(
+        'UPDATE app_user SET email_notification = $1, order_update = $2, promotion_update = $3 WHERE id = $4 RETURNING *',
+        [emailNotification, orderUpdate, promotionUpdate, userId]
+    );
+    return result.rows[0];
+};
 
 export const deleteUserById = async (userId: number): Promise<number | null> => {
     const result = await pool.query(
