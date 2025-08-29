@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
 import { stripe } from "../config/stripe";
+import pool from "../config/db";
+import { updatePaymentTransactionId } from "../services/paymentService";
+import { parse } from "path";
+import { updateOrderStatusByPaymentId } from "../services/orderService";
+import { createOrderLog } from "../services/orderLogService";
 
 export const handleWebhook = async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'];
@@ -18,12 +23,36 @@ export const handleWebhook = async (req: Request, res: Response) => {
         return;
     }
 
-    if(event.type === 'checkout.session.completed'){
-        // Handle successful checkout session
-        const session = event.data.object;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        if(event.type === 'checkout.session.completed'){
+            // Handle successful checkout session
+            const session = event.data.object;
+            const metadata = session.metadata;
+            if (metadata) {
+                const { paymentId, userId } = metadata as { paymentId?: string; userId?: string };
+                const payment = await updatePaymentTransactionId(parseInt(paymentId!), session.id);
+                const orders = await updateOrderStatusByPaymentId(payment.id, 'paid');
+                orders.forEach(async order => {
+                    await createOrderLog({
+                        order_id: order.id,
+                        status: 'Order Pending',
+                        storage_id: null,
+                        shipper_id: null
+                    });
+                });
+            }
+        }
 
-        console.log(session);
+        await client.query('COMMIT');
+        res.status(200).send();
+    } catch (error) {
+        console.error('Error processing webhook event:', error);
+        await client.query('ROLLBACK');
+        res.status(500).send('Internal Server Error');
+
+    } finally {
+        client.release();
     }
-
-    res.status(200).send();
 }
