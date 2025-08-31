@@ -15,6 +15,7 @@ import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middlewares/rateLimiter';
 import { handleWebhook } from './controllers/webhookController';
 import emailOtpRoutes from './routes/emailOtpRoutes';
+import orderRoutes from './routes/orderRoutes';
 
 
 const corsOptions = {
@@ -38,6 +39,7 @@ app.use('/admin', adminRoutes);
 app.use('/storage', storageRoutes);
 app.use('/shipper', shipperRoutes);
 app.use('/users', userRoutes);
+app.use('/orders', orderRoutes);
 app.use('/cart', cartRoutes);
 app.use('/store', storeRoutes);
 app.use('/products', productRoutes);
