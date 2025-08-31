@@ -17,6 +17,7 @@ import { handleWebhook } from './controllers/webhookController';
 import emailOtpRoutes from './routes/emailOtpRoutes';
 import orderRoutes from './routes/orderRoutes';
 import notificationRoutes from './routes/notificationRoute'
+import discountRoutes from './routes/discountRoutes';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -47,8 +48,7 @@ app.use('/categories', categoryRoutes);
 app.use('/payment', paymentRoutes);
 app.use('/email-otp', emailOtpRoutes);
 app.use('/notifications', notificationRoutes);
-
-
+app.use('/discounts', discountRoutes);
 
 export default app;
 
