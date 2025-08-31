@@ -42,11 +42,10 @@ export const updateOrderStatus = async (orderId: number, newStatus: NewOrder['st
 };
 
 export const deleteOrder = async (orderId: number) => {
-    const result = await pool.query(
-        'DELETE FROM order_table WHERE id = $1 RETURNING *',
+    await pool.query(
+        'DELETE FROM order_table WHERE id = $1',
         [orderId]
     );
-    return result.rows[0];
 };
 
 export const getAllOrdersByUserId = async (userId: number) => {
