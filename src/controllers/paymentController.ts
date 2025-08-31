@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { stripe } from '../config/stripe';
 import { createPayment } from '../services/paymentService';
+import type Stripe from 'stripe';
 import { createOrder } from '../services/orderService';
 import { createOrderLog } from '../services/orderLogService';
 import pool from '../config/db';
@@ -9,11 +10,19 @@ import { removeItemFromCartByUserId } from '../services/cartService';
 import { createOrderItem } from '../services/orderItem';
 
 interface CheckoutItem {
-    product_name: String, 
-    image_url: String, 
+    product_name: string, 
+    image_url: string, 
     price_at_purchase: number, 
     product_variant_id: number, 
     quantity: number, 
+}
+
+interface SingleCheckoutItem extends CheckoutItem {
+    express_shipping: boolean;
+    fast_shipping: boolean;
+    economical_shipping: boolean;
+    bulky_shipping: boolean;
+    store_id: number;
 }
 
 interface CheckOutCart {
@@ -113,7 +122,8 @@ export const createCheckoutSession = async(req: Request, res: Response) => {
             mode: 'payment',
             metadata: {
                 paymentId: payment.id.toString(),
-                userId: req.user.id.toString()
+                userId: req.user.id.toString(),
+                checkout_type: 'cart'
             },
             shipping_options: [
                 {
@@ -142,3 +152,101 @@ export const createCheckoutSession = async(req: Request, res: Response) => {
     }
 
 };
+
+
+export const createSingleProductCheckout = async(req: Request, res: Response) => {
+    if(req.user?.id === undefined){
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+    }
+
+    const { item, address_id } = req.body as { item: SingleCheckoutItem, address_id: number };
+
+    try {
+        const line_items = [{
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: item.product_name,
+                    images: [item.image_url],
+                },
+                unit_amount: item.price_at_purchase * 100,
+            },
+            quantity: item.quantity,
+        }];
+
+        const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [];
+        if(item.express_shipping){
+            shipping_options.push({
+                shipping_rate_data: {
+                    type: 'fixed_amount',
+                    fixed_amount: {
+                        amount: Math.round(30 * 100),
+                        currency: 'usd',
+                    },
+                    display_name: 'Express Shipping',
+                },
+            });
+        }
+
+        if(item.fast_shipping){
+            shipping_options.push({
+                shipping_rate_data: {
+                    type: 'fixed_amount',
+                    fixed_amount: {
+                        amount: Math.round(25 * 100),
+                        currency: 'usd',
+                    },
+                    display_name: 'Fast Shipping',
+                },
+            });
+        }
+
+        if(item.economical_shipping){
+            shipping_options.push({
+                shipping_rate_data: {
+                    type: 'fixed_amount',
+                    fixed_amount: {
+                        amount: Math.round(15 * 100),
+                        currency: 'usd',
+                    },
+                    display_name: 'Economical Shipping',
+                },
+            });
+        }
+
+        if(item.bulky_shipping){
+            shipping_options.push({
+                shipping_rate_data: {
+                    type: 'fixed_amount',
+                    fixed_amount: {
+                        amount: Math.round(50 * 100),
+                        currency: 'usd',
+                    },
+                    display_name: 'Bulky Shipping',
+                },
+            });
+        }
+
+        
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: line_items,
+            mode: 'payment',
+            metadata: {
+                userId: req.user.id.toString(),
+                address_id: address_id.toString(),
+                item: JSON.stringify(item),
+                checkout_type: 'single_item'
+            },
+            shipping_options: shipping_options,
+            success_url: `${process.env.FRONTEND_URL}/success`,
+            cancel_url: `${process.env.FRONTEND_URL}/fail`,
+        });
+
+        res.json({ id: session.id });
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
