@@ -15,7 +15,10 @@ import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middlewares/rateLimiter';
 import { handleWebhook } from './controllers/webhookController';
 import emailOtpRoutes from './routes/emailOtpRoutes';
-
+import orderRoutes from './routes/orderRoutes';
+import notificationRoutes from './routes/notificationRoute'
+import discountRoutes from './routes/discountRoutes';
+import wishlistRoutes from './routes/wishlistRoutes';
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -38,14 +41,16 @@ app.use('/admin', adminRoutes);
 app.use('/storage', storageRoutes);
 app.use('/shipper', shipperRoutes);
 app.use('/users', userRoutes);
+app.use('/orders', orderRoutes);
 app.use('/cart', cartRoutes);
 app.use('/store', storeRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/payment', paymentRoutes);
 app.use('/email-otp', emailOtpRoutes);
-
-
+app.use('/notifications', notificationRoutes);
+app.use('/discounts', discountRoutes);
+app.use('/wishlists', wishlistRoutes);
 
 export default app;
 

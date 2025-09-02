@@ -26,6 +26,10 @@ export const getCartByUserId = async (userId: number) => {
               SELECT
                 s.id AS store_id,
                 s.name AS store_name,
+                s.express_shipping AS store_express_shipping,
+                s.fast_shipping AS store_fast_shipping,
+                s.economical_shipping AS store_economical_shipping,
+                s.bulky_shipping AS store_bulky_shipping,
                 -- This creates the JSON array of items belonging to this specific store.
                 json_agg(
                   json_build_object(
