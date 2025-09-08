@@ -30,6 +30,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
     "pg": "^8.14.1",
+    "socket.io": "^4.8.1",
     "stripe": "^18.4.0",
     "xss-clean": "^0.1.4"
   },
