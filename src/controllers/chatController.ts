@@ -18,14 +18,14 @@ export const fetchUserConversations = async (req: Request, res: Response) => {
 };
 
 export const fetchStoreConversations = async (req: Request, res: Response) => {
-    const { storeId } = req.body;
+    const { storeId } = req.query;
     if (!storeId) {
         res.status(400).json({ error: "Store ID is required" });
         return;
     }
 
     try {
-        const conversations = await getConversationsByStoreId(storeId);
+        const conversations = await getConversationsByStoreId(Number(storeId));
         res.status(200).json(conversations);
     } catch (error) {
         console.error("Error fetching store conversations:", error);
