@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addToWishlist, createWishlist, getWishlistByUserId, getWishlistDetailById, removeFromWishlist, removeWishlistById } from "../services/wishlistService";
+import { getWishlistItem, addToWishlist, createWishlist, getWishlistByUserId, getWishlistDetailById, removeFromWishlist, removeWishlistById } from "../services/wishlistService";
 
 export const getWishlist = async (req: Request, res: Response) => {
     const userId = req.user?.id;
@@ -81,6 +81,12 @@ export const addToAWishlist = async (req: Request, res: Response) => {
     }
 
     try {
+        const existingItem = await getWishlistItem(wishlistId, productId);
+        if (existingItem) {
+            res.status(409).json({ error: "Item already in wishlist" });
+            return;
+        }
+
         const addedItem = await addToWishlist(wishlistId, productId);
         res.status(201).json(addedItem);
     } catch (error) {
