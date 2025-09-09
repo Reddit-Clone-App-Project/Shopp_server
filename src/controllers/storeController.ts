@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned, getAllProducts } from "../services/storeService";
+import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned, getAllProducts, getAllStoreInvolved } from "../services/storeService";
 import { ProductCard } from "../types/product";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
@@ -53,6 +53,23 @@ export const getAllStores = async ( req: Request, res: Response ) => {
   };
 };
 
+export const getStoresByUserId = async ( req: Request, res: Response ) => {
+   try {
+       const userId = req.user?.id;
+
+       if (!userId) {
+           res.status(400).json({ error: 'User ID is required' });
+           return;
+       }
+
+       const stores = await getAllStoreInvolved(userId);
+       res.status(200).json(stores);
+   } catch (error) {
+       console.error("Error cannot get stores by user ID", error);
+       res.status(500).json({ error: "Error cannot get stores by user ID" });
+   }
+};
+    
 export const getStoreByOwnerId = async ( req: Request, res: Response ) => {
     
     try{

@@ -71,6 +71,14 @@ export const createWishlist = async (userId: number, name: string) => {
     return result.rows[0];
 };
 
+export const getWishlistItem = async (wishlistId: number, productId: number) => {
+    const result = await pool.query(
+        'SELECT * FROM public.wishlist_item WHERE wishlist_id = $1 AND product_id = $2',
+        [wishlistId, productId]
+    );
+    return result.rows[0];
+}
+
 export const addToWishlist = async (wishlistId: number, productId: number) => {
     const result = await pool.query(
         'INSERT INTO public.wishlist_item (wishlist_id, product_id) VALUES ($1, $2) RETURNING *',
