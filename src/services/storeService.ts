@@ -26,6 +26,15 @@ export const createOwner = async (owner: StoreOwner, client: PoolClient) => {
     );
 };
 
+export const getAllStoreInvolved = async (userId: number) => {
+    const result = await pool.query(
+        'SELECT s.* FROM store_user su JOIN store s ON su.store_id = s.id WHERE su.app_user_id = $1',
+        [userId]
+    );
+    return result.rows;
+};
+
+//! This function might be deprecated, change later
 export const getStoresOwned = async (userId: number) => {
     const result = await pool.query(
         'SELECT s.* FROM store_user su JOIN store s ON su.store_id = s.id WHERE su.app_user_id = $1 AND su.role = \'owner\'',

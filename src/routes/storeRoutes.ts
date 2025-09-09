@@ -1,12 +1,11 @@
 import express from "express";
-import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreByOwnerId, getStoreProductsById } from "../controllers/storeController";
+import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreByOwnerId, getStoreProductsById, getStoresByUserId } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authLimiter } from "../middlewares/rateLimiter";
 
 const router = express.Router();
 
 router.post('/', authLimiter, authenticateToken, registerStore);
-router.get('/my-store', authenticateToken, getStoreByOwnerId);
 router.get('/:id', getStoreById);
 router.put('/:id', authenticateToken, updateStore);
 router.delete('/:id', authenticateToken, deleteStore);
@@ -18,5 +17,9 @@ router.get('/:id/products/all', authenticateToken, getStoreProductsById);
 
 // Discount routes
 router.get('/:id/discounts', getStoreDiscounts);
+
+//! Seller routes
+router.get('/my-store', authenticateToken, getStoreByOwnerId);
+router.get('/involved-stores', authenticateToken, getStoresByUserId);
 
 export default router;
