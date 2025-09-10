@@ -75,14 +75,15 @@ The server will now be running and listening on the port you defined in your `.e
     wget https://github.com/Reddit-Clone-App-Project/Shopp_server/raw/refs/heads/main/compose.yaml
     ```
 
-3.  Download the example .env file and edit it to include your necessary server credentials:
+3.  Download the example .env file and edit it to include your necessary server credentials.\
+    **Note:** Make sure the .env file on the host has AT LEAST read access for all users for the user inside the container to be able to read the file. You can do this with `chmod a+r .env` after editing the file.
     ```sh
     wget https://github.com/Reddit-Clone-App-Project/Shopp_server/raw/refs/heads/main/env.example
     mv env.example .env
     nano .env # edit the file then save with Ctrl+S
     ```
 
-4.  Let Docker Compose pull the image and run the server for you:
+5.  Let Docker Compose pull the image and run the server for you:
     ```sh
     docker compose up
 
