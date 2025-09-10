@@ -38,11 +38,11 @@ This project requires a PostgreSQL database. We have prepared the necessary SQL 
 3.  Execute this script in your PostgreSQL database instance. This will create all the tables and relationships required for the application to function.
 4.  After setting up the database, proceed to the installation steps below.
 
-### Installation & Setup
+### Installation & Setup (manual)
 
 1.  Clone your forked repository (replace `YOUR-USERNAME` and use your actual repository name):
     ```sh
-    git clone [https://github.com/YOUR-USERNAME/shopp-ecommerce-server.git](https://github.com/YOUR-USERNAME/shopp-ecommerce-server.git)
+    git clone https://github.com/YOUR-USERNAME/shopp-ecommerce-server.git
     cd shopp-ecommerce-server
     ```
 
@@ -63,6 +63,32 @@ This project requires a PostgreSQL database. We have prepared the necessary SQL 
     npm run dev
     ```
 The server will now be running and listening on the port you defined in your `.env` file.
+
+### Docker Deployment
+
+1.  Make sure `docker` is installed in your system with the compose plugin.
+
+2.  Create a directory for the project and download the `compose.yaml` file from the repository:
+    ```sh
+    mkdir shopp_server
+    cd shopp_server
+    wget https://github.com/Reddit-Clone-App-Project/Shopp_server/raw/refs/heads/main/compose.yaml
+    ```
+
+3.  Download the example .env file and edit it to include your necessary server credentials:
+    ```sh
+    wget https://github.com/Reddit-Clone-App-Project/Shopp_server/raw/refs/heads/main/env.example
+    mv env.example .env
+    nano .env # edit the file then save with Ctrl+S
+    ```
+
+4.  Let Docker Compose pull the image and run the server for you:
+    ```sh
+    docker compose up
+
+    # run docker compose up -d for it to be detached
+    # use docker compose down to stop and remove the container
+    ```
 
 ## 📁 Project Folder Structure
 
