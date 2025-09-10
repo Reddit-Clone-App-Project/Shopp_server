@@ -259,7 +259,7 @@ export const getDiscountsByStoreId = async (storeId: number) => {
 
 export const getAllProducts = async (storeId: number, limit: number, offset: number) => {
     const result = await pool.query(
-        'SELECT p.*, c.name AS category_name, v.price AS variant_price, v.variant_name AS variant_name, v.stock_quantity AS variant_stock FROM product p INNER JOIN category c ON p.category_id = c.id INNER JOIN product_variant v ON p.id = v.product_id WHERE p.store_id = $1  ORDER BY p.id ASC LIMIT $2 OFFSET $3',
+        'SELECT p.*, c.name AS category_name, v.price AS variant_price, v.variant_name AS variant_name, v.stock_quantity AS variant_stock, v.sku AS variant_sku FROM product p INNER JOIN category c ON p.category_id = c.id INNER JOIN product_variant v ON p.id = v.product_id WHERE p.store_id = $1  ORDER BY p.id ASC LIMIT $2 OFFSET $3',
         [storeId, limit, offset]
     );
     return result.rows;
