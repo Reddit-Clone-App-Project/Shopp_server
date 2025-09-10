@@ -83,7 +83,7 @@ The server will now be running and listening on the port you defined in your `.e
     nano .env # edit the file then save with Ctrl+S
     ```
 
-5.  Let Docker Compose pull the image and run the server for you:
+4.  Let Docker Compose pull the image and run the server for you:
     ```sh
     docker compose up
 
