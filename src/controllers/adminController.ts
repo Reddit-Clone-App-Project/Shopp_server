@@ -128,7 +128,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
       return;
     }
 
-    const { id, databasePassword } = validationResult;
+    const { id, databasePassword, empRole } = validationResult;
 
     if (!databasePassword) {
       res.status(404).json({ error: "Admin not found" });
@@ -144,13 +144,13 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     // Add JWT
     const accessToken = jwt.sign(
-      { id, role: 'admin' },
+      { id, role: empRole },
       process.env.ACCESS_TOKEN_SECRET as string,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { id, role: "admin" },
+      { id, role: empRole },
       process.env.REFRESH_TOKEN_SECRET as string,
       { expiresIn: "1d" }
     );
