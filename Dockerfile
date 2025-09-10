@@ -1,4 +1,4 @@
-FROM node:24-alpine3.21 # use node's alpine image for lightweightness
+FROM node:24-alpine3.21
 WORKDIR /server
 COPY . .
 RUN adduser -D shopp_server
