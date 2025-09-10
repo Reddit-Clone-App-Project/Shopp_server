@@ -42,12 +42,12 @@ export const removeRefreshTokenFromDB = async (refresh_token: string): Promise<v
 };
 
 // Admin
-export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: string} | undefined> => {
+export const validationAdmin = async (email: string): Promise<{id: number, databasePassword: string, empRole: string} | undefined> => {
     const result = await pool.query(
-        'SELECT id, password FROM admin WHERE email = $1',
+        'SELECT id, password, emp_role FROM admin WHERE email = $1',
         [email]
     );
-    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password};
+    return {id: result.rows[0]?.id, databasePassword: result.rows[0]?.password, empRole: result.rows[0]?.emp_role};
 };
 
 export const assignRefreshTokenToDBAdmin = async (id: number, refreshToken: string): Promise<void> => {
