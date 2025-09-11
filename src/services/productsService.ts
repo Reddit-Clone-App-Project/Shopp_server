@@ -2,6 +2,7 @@ import { PoolClient } from "pg";
 import pool from "../config/db";
 import type { BasicProductVariant, CompleteProduct, NewProduct, UpdateProduct, UpdateProductVariant, VariantImage, UpdateVariantImage, Product, BasicProduct, ProductCard, ProductDataType, VariantDataType } from "../types/product";
 import { Review } from "../types/store";
+import { bucket } from "../config/gcs";
 
 // This service get products for the home page
 export const getHotProducts = async (limit: number = 20, offset: number = 0): Promise<ProductCard[]> => {
@@ -153,7 +154,7 @@ export const getProductProfile = async (productId: number): Promise<Product> => 
 
 export const getCategoryId = async (client: PoolClient, name: string): Promise<number> => {
     const result = await client.query(
-        'SELECT id FROM category WHERE slug = $1',
+        'SELECT id FROM category WHERE name = $1',
         [name]
 
     );
@@ -168,31 +169,22 @@ export const createProduct = async (client: PoolClient, data: ProductDataType, s
         [data.name, data.description, store_id, data.category]
     );
 
-    const lengthN = Number(data.length);
-    const widthN  = Number(data.width);
-    const heightN = Number(data.height);
-    const dimension = [lengthN, widthN, heightN].every(v => Number.isFinite(v) && v > 0)
-        ? lengthN * widthN * heightN
-        : 0;
+    const productId = product.rows[0].id;
 
-    await client.query(
-        'INSERT INTO product_variant (product_id, price, length, width, height, weight, dimension, sku, variant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, price, length, width, height, weight, variant_name',
-        [product.rows[0].id, data.price, data.length, data.width, data.height, data.weight, dimension, data.sku, data.variant[0].variantName]
-    );
-
-
+    // Handle promotion image
     if (data.promotionImage) {
         await client.query(
             'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3)',
-            [product.rows[0].id, data.promotionImage, true]
+            [productId, data.promotionImage, true]
         );
     };
 
+    // Handle other product images
     if (Array.isArray(data.productImage) && data.productImage.length > 0) {
         for (const url of data.productImage) {
             await client.query(
                 'INSERT INTO product_image (product_id, url, is_promotion_image) VALUES ($1, $2, $3)',
-                [product.rows[0].id, url, false]
+                [productId, url, false]
             );
         };
     };
@@ -209,27 +201,21 @@ export const createProductVariant = async (client: PoolClient, variant: VariantD
         : 0;
 
     const newVariant = await client.query(
-        'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, length, width, height, sku) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, product_id, variant_name, price, weight, dimension',
-        [variant.product_id, variant.variantName, variant.variantPrice, variant.variantWeight, dimension, variant.variantLength, variant.variantWidth, variant.variantHeight, variant.variantSku]
+        'INSERT INTO product_variant (product_id, variant_name, price, weight, dimension, sku) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, product_id, variant_name, price, weight, dimension',
+        // Ensure price is treated as a number
+        [variant.product_id, variant.variantName, Number(variant.variantPrice), variant.variantWeight, dimension, variant.variantSku]
     );
 
     const newVariantId = newVariant.rows[0].id;
 
+    // This part is already correct for handling URLs
     if (Array.isArray(variant.variantImage) && variant.variantImage.length > 0) {
         for (const url of variant.variantImage) {
             if (url && typeof url === 'string' && url.trim() !== '') {
-                try {
-                    await client.query(
-                        'INSERT INTO product_image (product_id, product_variant_id, url) VALUES ($1, $2, $3)',
-                        [variant.product_id, newVariantId, url]
-                    );
-                } catch (error: any) {
-                    if (error.code === '23505') {
-                        console.error(`Duplicate image for variant_id=${newVariantId} and url='${url}'`);
-                    } else {
-                        throw error;
-                    }
-                }
+                await client.query(
+                    'INSERT INTO product_image (product_id, product_variant_id, url) VALUES ($1, $2, $3)',
+                    [variant.product_id, newVariantId, url]
+                );
             }
         }
     }
