@@ -1,6 +1,6 @@
+import { PoolClient } from 'pg';
 import pool from '../config/db';
 import { User, NewUser, UpdateUser, UserAddress, UpdateUserAddress } from '../types/users';
-import validator  from 'validator';
 
 export const createUser = async (user: NewUser) => {
     const result = await pool.query(
@@ -112,53 +112,13 @@ export const setAddressIsDefaultTrue = async (addressId: number) => {
         [addressId]
     );
 }
-/*
-!The functions below are deprecated(Code and types are updated, so if want to reuse this code, must look at it carefully) and unnecessary, may be removed, or changed in the future
-export const getUserByEOrP = async (eOrP: string): Promise<User | undefined> => {
-    let result: any;
-    if (validator.isEmail(eOrP)) {
-        result = await pool.query(
-            'SELECT * FROM app_user WHERE email = $1',
-            [eOrP]
-        );
-    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
-        result = await pool.query(
-            'SELECT * FROM app_user WHERE phone_number = $1',
-            [eOrP]
-        );
-    }
 
-    return result.rows[0];
-};
-
-export const updateUser = async (user: UpdateUser): Promise<User | undefined>  => {
-    const result = await pool.query(
-        'UPDATE app_user SET full_name = $1, phone_number = $2, email: $3, nationality = $4, date_of_birth = $5, profile_img = $6, updated_at = NOW() WHERE email = $3 RETURNING full_name, phone_number, nationality, date_of_birth, profile_img',
-        [user.fullname, user.phone_number, user.email, user.nationality, user.birthdate, user.avatarImg]
+//! Store use cases
+export const  updateRoleToSeller = async (client: PoolClient, userId: number) => {
+    const result = await client.query(
+        'UPDATE app_user SET role = $1 WHERE id = $2 RETURNING *',
+        ['seller', userId]
     );
-    
     return result.rows[0];
 };
-
-
-export const deleteUserByEOrP = async (eOrP: string): Promise<number | undefined> => {
-    let result: any;
-    if (validator.isEmail(eOrP)) {
-        result = await pool.query(
-            'DELETE FROM app_user WHERE email = $1',
-            [eOrP]
-        );
-    } else if (validator.isMobilePhone(eOrP, 'any', { strictMode: false })) {
-        result = await pool.query(
-            'DELETE FROM app_user WHERE phone_number = $1',
-            [eOrP]
-        );
-    }
-    return result.rowCount;
-};
-*/
-
-
-
-
 

@@ -44,13 +44,6 @@ export interface StoreUpdate {
 
 export type StoreRole = 'owner' | 'manager' | 'editor';
 
-export type StoreOwner = {
-    store_id: number;
-    app_user_id: number;
-    role: StoreRole;
-};
-
-
 export interface StoreInfo {
     id: number;
     storeName: string,

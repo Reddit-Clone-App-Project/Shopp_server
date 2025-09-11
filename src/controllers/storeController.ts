@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import pool from '../config/db';
 import { StoreData, StoreOutput, StoreInfo, StoreAddress, RatingStats, Review, StoreInfoUpdate  } from '../types/store';
-import { createAddress, createStore, createOwner, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getStoresOwned, getAllProducts, getAllStoreInvolved } from "../services/storeService";
+import { createAddress, createStore, getStores, getStoreProfile, getStoreAddressById, getRatingStats, getRecentReviews, updateStoreProfile, deleteStoreProfile, checkStoreOwner, getDiscountsByStoreId, getStoreTrendingProducts, getStoreProducts, getAllProducts, getUserStore } from "../services/storeService";
 import { ProductCard } from "../types/product";
+import { updateRoleToSeller } from "../services/userService";
 
 export const registerStore = async (req: Request<{}, {}, StoreData>, res: Response) => {
     const data = req.body;
@@ -19,15 +20,17 @@ export const registerStore = async (req: Request<{}, {}, StoreData>, res: Respon
             return;
         };
 
+        // Update user role to seller
+        const sellerUser = await updateRoleToSeller(client, req.user.id);
+        if (!sellerUser) {
+            await client.query('ROLLBACK');
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
         const address_id: number = await createAddress(address, client);
 
-        const newStore: StoreOutput = await createStore(data, address_id, client);
-
-        await createOwner({
-            store_id: newStore.id,
-            app_user_id: req.user.id,
-            role: 'owner',
-        }, client);
+        const newStore: StoreOutput = await createStore(data, req.user.id, address_id, client);
 
         await client.query('COMMIT');
         res.status(201).json(newStore);
@@ -51,46 +54,6 @@ export const getAllStores = async ( req: Request, res: Response ) => {
         console.error("Error cannot get all stores", err);
         res.status(500).json({ error: "Error cannot get all stores" });
   };
-};
-
-export const getStoresByUserId = async ( req: Request, res: Response ) => {
-   try {
-       const userId = req.user?.id;
-
-       if (!userId) {
-           res.status(400).json({ error: 'User ID is required' });
-           return;
-       }
-
-       const stores = await getAllStoreInvolved(userId);
-       res.status(200).json(stores);
-   } catch (error) {
-       console.error("Error cannot get stores by user ID", error);
-       res.status(500).json({ error: "Error cannot get stores by user ID" });
-   }
-};
-    
-export const getStoreByOwnerId = async ( req: Request, res: Response ) => {
-    
-    try{
-        if (req.user?.id === undefined) {
-            res.status(400).json({ error: 'User ID is required to get stores owned by user.' });
-            return;
-        };
-    
-        const userId = req.user?.id;
-        const storesOwned = await getStoresOwned(userId);
-        
-        if (!storesOwned || storesOwned.length === 0) {
-            res.status(404).json({ error: 'User is not the owner of any stores!'});
-            return;
-        }
-
-        res.status(200).json(storesOwned);
-    } catch (err) {
-        console.error('Error cannot get store by user id', err);
-        res.status(500).json({ error: 'Error cannot get store by user id'});
-    };
 };
 
 export const getStoreById = async ( req: Request, res: Response ) => {
@@ -117,6 +80,25 @@ export const getStoreById = async ( req: Request, res: Response ) => {
     };
 };
 
+export const getStoreByUserId = async ( req: Request, res: Response ) => {
+    if(req.user?.id === undefined) {
+        res.status(400).json({ error: 'User ID is required to get a store.' });
+        return;
+    }
+
+    const userId = req.user?.id;
+    try {
+        const store = await getUserStore(userId);
+        if (!store) {
+            res.status(404).json({ error: 'Store not found' });
+            return;
+        }
+        res.status(200).json(store);
+    } catch (error) {
+        console.error("Error cannot get store by user ID", error);
+        res.status(500).json({ error: "Error cannot get store by user ID" });
+    }
+};
 
 export const updateStore = async ( req: Request, res: Response ): Promise<void> => {
     const storeId = Number(req.params.id);
