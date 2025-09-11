@@ -1,14 +1,13 @@
 import express from "express";
-import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreByOwnerId, getStoreProductsById, getStoresByUserId } from "../controllers/storeController";
+import { registerStore, getStoreById, updateStore, deleteStore, getStoreHotProducts, getStoreDiscounts, getStoreProductsBought, getStoreProductsById, getStoreByUserId } from "../controllers/storeController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authLimiter } from "../middlewares/rateLimiter";
+import { authorizeRole } from "../middlewares/authorizationRole";
 
 const router = express.Router();
 
 router.post('/', authLimiter, authenticateToken, registerStore);
-//! Seller routes
-router.get('/my-store', authenticateToken, getStoreByOwnerId);
-router.get('/involved-stores', authenticateToken, getStoresByUserId);
+router.get('/your-store', authenticateToken, authorizeRole(['seller']), getStoreByUserId);
 
 //! Buyer routes
 router.get('/:id', getStoreById);

@@ -1,7 +1,15 @@
 import pool from "../config/db";
 import { ProductCard } from "../types/product";
-import { StoreData, StoreAddress, StoreOwner, StoreInfo, RatingStats, Review, StoreUpdate, StoreInfoUpdate } from "../types/store";
+import { StoreData, StoreAddress, StoreInfo, RatingStats, Review, StoreUpdate, StoreInfoUpdate } from "../types/store";
 import { PoolClient } from "pg";
+
+export const getUserStore = async (userId: number) => {
+    const result = await pool.query(
+        `SELECT * FROM store WHERE app_user_id = $1`,
+        [userId]
+    );
+    return result.rows[0];
+};
 
 export const createAddress = async (address: StoreAddress, client: PoolClient) => {
     const result = await client.query(
@@ -11,36 +19,12 @@ export const createAddress = async (address: StoreAddress, client: PoolClient) =
     return result.rows[0].id;
 };
 
-export const createStore = async (store: StoreData, address_id: number, client: PoolClient) => {
+export const createStore = async (store: StoreData, app_user_id: number, address_id: number, client: PoolClient) => {
     const result = await client.query(
-        'INSERT INTO store (name, address_id, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, phone_number',
-        [store.storeName, address_id, store.storePhone, store.storeEmail, store.expressShipping, store.fastShipping, store.economicalShipping, store.bulkyShipping]
+        'INSERT INTO store (name, app_user_id, address_id, phone_number, email, express_shipping, fast_shipping, economical_shipping, bulky_shipping) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, name, email, phone_number',
+        [store.storeName, app_user_id, address_id, store.storePhone, store.storeEmail, store.expressShipping, store.fastShipping, store.economicalShipping, store.bulkyShipping]
     );
     return result.rows[0];
-};
-
-export const createOwner = async (owner: StoreOwner, client: PoolClient) => {
-    const result = await client.query(
-        'INSERT INTO store_user (store_id, app_user_id, role) VALUES ($1, $2, $3)',
-        [owner.store_id, owner.app_user_id, owner.role]
-    );
-};
-
-export const getAllStoreInvolved = async (userId: number) => {
-    const result = await pool.query(
-        'SELECT s.* FROM store_user su JOIN store s ON su.store_id = s.id WHERE su.app_user_id = $1',
-        [userId]
-    );
-    return result.rows;
-};
-
-//! This function might be deprecated, change later
-export const getStoresOwned = async (userId: number) => {
-    const result = await pool.query(
-        'SELECT s.* FROM store_user su JOIN store s ON su.store_id = s.id WHERE su.app_user_id = $1 AND su.role = \'owner\'',
-        [userId]
-    );
-    return result.rows;
 };
 
 export const getStores = async () => {
@@ -92,7 +76,7 @@ export const getRecentReviews = async (storeId: number, limit: number): Promise<
 
 export const checkStoreOwner = async (storeId: number, userId: number): Promise<boolean> => {
     const result = await pool.query(
-        'SELECT app_user_id FROM store_user WHERE store_id = $1',
+        'SELECT app_user_id FROM store WHERE id = $1',
        [storeId] 
     );
     const ownerId = result.rows[0]?.app_user_id;
