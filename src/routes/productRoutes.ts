@@ -3,6 +3,7 @@ import express from "express";
 import { fetchSuggestions, createAProduct, getHot, getProductById, getProductReviews, getProductReviewsByStar, getProductReviewsHaveComment, getProductReviewsHaveImage, searchForProducts } from "../controllers/productsController";
 import { authenticateToken } from "../middlewares/authenticateToken";
 import { authorizeRole } from "../middlewares/authorizationRole";
+import upload from "../middlewares/uploadProductImage";
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/hot', getHot);
 
 
 router.get('/:id', getProductById);
-router.post('/create', authenticateToken, authorizeRole(['seller', 'admin']), createAProduct);
+router.post('/create', authenticateToken, authorizeRole(['seller', 'admin']), upload, createAProduct);
 /*
 router.put('/:id', authenticateToken, authorizeRole(['seller', 'admin']), updateAProduct);
 router.post('/variant', authenticateToken, authorizeRole(['seller', 'admin']), addVariant);

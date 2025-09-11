@@ -3,6 +3,7 @@ import pool from '../config/db';
 import { Product, ProductCard, VariantDataType } from "../types/product";
 import { getHotProducts, getProductProfile, getReviews, getReviewsByStar, getReviewsThatHaveComment, getReviewsThatHaveImage, searchProducts, getSearchSuggestions, createProduct, createProductVariant, getCategoryId } from "../services/productsService";
 import { checkStoreOwner } from "../services/storeService";
+import { bucket } from "../config/gcs";
 
 export const getHot = async (req: Request, res: Response) => {
     const limit: number = Number(req.query.limit) || 20;
@@ -36,85 +37,159 @@ export const getProductById = async (req: Request, res: Response) => {
     };
 };
 
+// Helper function remains the same
+const uploadFileToGCS = async (file: Express.Multer.File, userId: number): Promise<string> => {
+    const key = `Products images/${userId}/${Date.now()}_${file.originalname}`;
+    const gcsFile = bucket.file(key);
+
+    await gcsFile.save(file.buffer, {
+        resumable: false,
+        contentType: file.mimetype,
+    });
+
+    return `https://storage.googleapis.com/${bucket.name}/${key}`;
+};
+
 
 export const createAProduct = async (req: Request, res: Response) => {
-    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
         if (req.user?.id === undefined) {
-            res.status(400).json({ error: 'User ID is required to update a product.' });
-            return;
-        };
+            return res.status(400).json({ error: 'User ID is required.' });
+        }
+        const userId: number = req.user.id;
 
-        const userId: number = req.user?.id;
+        const { store_id, name, description, category, price, weight, length, width, height, sku, variants: variantsJSON } = req.body;
+        const files = req.files as Express.Multer.File[];
 
-        const { store_id, productData } = req.body;
+        const variants = variantsJSON ? JSON.parse(variantsJSON) : [];
+        // if (!name || !category || !price || !store_id) {
+        //     return res.status(400).json({ error: 'Missing required product data.' });
+        // }
 
-        if (!productData) {
-            res.status(400).json({ error: 'Missing productData' });
-            return;
+        if (!name) return res.status(400).json({ error: 'Product name is required.' });
+        if (!category) return res.status(400).json({ error: 'Product category is required.' });
+        if (!store_id) return res.status(400).json({ error: 'Store ID is missing or invalid.' });
+
+        console.log('Parsed variants:', variants);
+        if (variants.length === 0 && !price) {
+            return res.status(400).json({ error: 'Product price is required when no variants are provided.' });
         }
 
-        let {
-            name,
-            description,
-            category,
-            productImage,
-            promotionImage,
-            price,
-            weight,
-            length,
-            width,
-            height,
-            express,
-            fast,
-            economical,
-            bulky,
-            sku,
-            variant
-        } = productData;
+        // --- Sort the files from req.files array ---
+        let promotionImageFile: Express.Multer.File | undefined;
+        const productImagesFiles: Express.Multer.File[] = [];
+        // Use an object to group variant images by their index
+        const variantImagesFiles: { [key: string]: Express.Multer.File[] } = {};
 
-
+        for (const file of files) {
+            if (file.fieldname === 'promotionImage') {
+                promotionImageFile = file;
+            } else if (file.fieldname === 'productImages') {
+                productImagesFiles.push(file);
+            } else if (file.fieldname.startsWith('variantImages_')) {
+                // Extracts the index (e.g., '0' from 'variantImages_0')
+                const index = file.fieldname.split('_')[1];
+                if (!variantImagesFiles[index]) {
+                    variantImagesFiles[index] = [];
+                }
+                variantImagesFiles[index].push(file);
+            }
+        }
+        
         const isOwner: boolean = await checkStoreOwner(store_id, userId);
         if (!isOwner) {
-            res.status(403).json({ error: 'You must be the owner of the store!'});
-            return;
+            return res.status(403).json({ error: 'You must be the owner of the store!' });
+        }
+
+        console.log(category);
+        const categoryId: number = await getCategoryId(client, category);
+
+        // --- Image Upload Logic (using sorted files) ---
+        let promotionImageUrl = '';
+        if (promotionImageFile) {
+            promotionImageUrl = await uploadFileToGCS(promotionImageFile, userId);
+        }
+
+        const productImagesUrls: string[] = [];
+        for (const file of productImagesFiles) {
+            const url = await uploadFileToGCS(file, userId);
+            productImagesUrls.push(url);
+        }
+
+       const productData = {
+            name,
+            description,
+            category: categoryId,
+            store_id: Number(store_id), 
+            price: Number(String(price).replace(',', '.')),
+            weight, length, width, height, sku,
+            promotionImage: promotionImageUrl,
+            productImage: productImagesUrls,
+            variant: [], 
         };
-
-        const categoryId: number = await getCategoryId(client, productData.category);
-        productData.category = categoryId;
-        productData.price = Number(String(productData.price).replace(',', '.'));
-        productData.variant.variantPrice = Number(String(productData.price).replace(',', '.'));
-
-        const newProduct  = await createProduct(client, productData, store_id);
-
+        
+        const newProduct = await createProduct(client, productData, store_id);
         const productId: number = newProduct.id;
+        
+        // Handle variants
+        const createdVariants = [];
+        if (variantsJSON) {
+            const variants = JSON.parse(variantsJSON);
+            if (Array.isArray(variants) && variants.length > 0) {
+                for (let i = 0; i < variants.length; i++) {
+                    const v = variants[i];
+                    const variantImagesUrls: string[] = [];
+                    const filesForVariant = variantImagesFiles[i] || [];
 
-        let variants = [];
-        if (Array.isArray(variant) && variant.length > 0) {
-            for (const v of variant) {
-                const variantProduct: VariantDataType = { ...v, product_id: productId };
-                const newVariant = await createProductVariant(client, variantProduct);
-                variants.push(newVariant); 
+                    for (const file of filesForVariant) {
+                        const url = await uploadFileToGCS(file, userId);
+                        variantImagesUrls.push(url);
+                    }
+
+                    const variantProduct: VariantDataType = { 
+                        ...v, 
+                        product_id: productId,
+                        variantImage: variantImagesUrls,
+                        variantPrice: Number(String(v.variantPrice).replace(',', '.'))
+                    };
+                    const newVariant = await createProductVariant(client, variantProduct);
+                    createdVariants.push(newVariant); 
+                }
+            }
+        } else {
+            const defaultVariantData = {
+                product_id: productId,
+                variantName: 'default',
+                variantPrice: productData.price,
+                variantWeight: weight,
+                variantLength: length,
+                variantWidth: width,
+                variantHeight: height,
+                variantSku: sku,
+                variantImage: [] 
             };
-        };
+            const newVariant = await createProductVariant(client, defaultVariantData as VariantDataType);
+            createdVariants.push(newVariant);
+        }
         
         await client.query('COMMIT');
         res.status(201).json({
             product: newProduct,
-            variants,
+            variants: createdVariants,
         });
         
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Error creating product:', err);
-        res.status(500).json({error: 'Error creating product'});
+        res.status(500).json({ error: 'Error creating product' });
     } finally {
         client.release();
-    };
+    }
 };
+
 
 // Review
 export const getProductReviews = async (req: Request, res: Response) => {
