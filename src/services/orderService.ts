@@ -19,7 +19,54 @@ export const getOrderById = async (orderId: number) => {
 
 export const getAllOrdersByStoreId = async (storeId: number) => {
     const result = await pool.query(
-        'SELECT * FROM order_table WHERE store_id = $1',
+        `SELECT
+            o.id,
+            o.status,
+            o.total_without_shipping,
+            -- Step 3: Coalesce ensures we get an empty array '[]' instead of NULL if an order has no items.
+            COALESCE(p_agg.products, '[]'::json) AS products
+        FROM order_table o
+        -- Step 2: Join the aggregated product data back to the main order table.
+        -- LEFT JOIN is used to include orders that might not have any items.
+        LEFT JOIN (
+            SELECT
+                oi.order_table_id,
+                json_agg(json_build_object(
+                    'name', p.name,
+                    'variants', p_variants.variants
+                )) AS products
+            FROM order_item oi
+            JOIN product_variant pv ON oi.product_variant_id = pv.id
+            JOIN product p ON pv.product_id = p.id
+            -- Step 1: Aggregate variants for each product within each order first.
+            JOIN (
+                SELECT
+                    order_table_id,
+                    product_id,
+                    json_agg(json_build_object(
+                        'id', id,
+                        'name', variant_name,
+                        'price', price,
+                        'quantity', quantity,
+                        'price_at_purchase', price_at_purchase
+                    )) AS variants
+                FROM (
+                    SELECT
+                        oi_inner.order_table_id,
+                        pv_inner.product_id,
+                        pv_inner.id,
+                        pv_inner.variant_name,
+                        pv_inner.price,
+                        oi_inner.quantity,
+                        oi_inner.price_at_purchase
+                    FROM order_item oi_inner
+                    JOIN product_variant pv_inner ON oi_inner.product_variant_id = pv_inner.id
+                ) AS variant_details
+                GROUP BY order_table_id, product_id
+            ) AS p_variants ON p_variants.order_table_id = oi.order_table_id AND p_variants.product_id = p.id
+            GROUP BY oi.order_table_id
+        ) AS p_agg ON o.id = p_agg.order_table_id
+        WHERE o.store_id = $1;`,
         [storeId]
     );
     return result.rows;

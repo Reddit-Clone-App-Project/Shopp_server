@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getAllOrdersByUserId, getOrderDetailById, deleteOrder } from "../services/orderService";
-
+import { checkStoreOwner } from "../services/storeService";
 
 export const getOrdersByUserId = async (req: Request, res: Response) => {
     if(req.user?.id === undefined){
@@ -35,6 +35,33 @@ export const getOrderDetailByOrderId = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Internal server error" });
     }
 }
+
+export const getOrderByStoreId = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if(userId === undefined){
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+    }
+    const storeId = parseInt(req.params.storeId);
+    if (isNaN(storeId)) {
+        res.status(400).json({ error: "Invalid store ID" });
+        return;
+    }
+
+    try {
+        const isStoreOwner: boolean = await checkStoreOwner(storeId, userId);
+        if (!isStoreOwner) {
+            res.status(403).json({ error: 'You must be the owner of the store!' });
+            return;
+        }
+
+        const orders = await getAllOrdersByUserId(storeId);
+        res.json(orders);
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 export const removeOrderById = async (req: Request, res: Response) => {
     try {
