@@ -19,7 +19,59 @@ export const getOrderById = async (orderId: number) => {
 
 export const getAllOrdersByStoreId = async (storeId: number) => {
     const result = await pool.query(
-        'SELECT * FROM order_table WHERE store_id = $1',
+        `SELECT
+            o.id,
+            u.username,
+            o.status,
+            o.total_without_shipping,
+            s.id AS shipping_id,
+            s.shipping_unit,
+            s.shipping_type AS shipping_method,
+            COALESCE(p_agg.products, '[]'::json) AS products
+        FROM order_table o
+        LEFT JOIN (
+            -- The complex product aggregation subquery remains the same...
+            SELECT
+                oi.order_table_id,
+                json_agg(json_build_object(
+                    'name', p.name,
+                    'variants', p_variants.variants
+                )) AS products
+            FROM order_item oi
+            JOIN product_variant pv ON oi.product_variant_id = pv.id
+            JOIN product p ON pv.product_id = p.id
+            JOIN (
+                SELECT
+                    order_table_id,
+                    product_id,
+                    json_agg(json_build_object(
+                        'id', id,
+                        'name', variant_name,
+                        'price', price,
+                        'quantity', quantity,
+                        'price_at_purchase', price_at_purchase
+                    )) AS variants
+                FROM (
+                    SELECT
+                        oi_inner.order_table_id,
+                        pv_inner.product_id,
+                        pv_inner.id,
+                        pv_inner.variant_name,
+                        pv_inner.price,
+                        oi_inner.quantity,
+                        oi_inner.price_at_purchase
+                    FROM order_item oi_inner
+                    JOIN product_variant pv_inner ON oi_inner.product_variant_id = pv_inner.id
+                ) AS variant_details
+                GROUP BY order_table_id, product_id
+            ) AS p_variants ON p_variants.order_table_id = oi.order_table_id AND p_variants.product_id = p.id
+            GROUP BY oi.order_table_id
+        ) AS p_agg ON o.id = p_agg.order_table_id
+        -- Changed to LEFT JOIN to prevent orders from being dropped
+        LEFT JOIN shipping s ON o.id = s.order_id
+        -- Changed to LEFT JOIN to prevent orders from being dropped
+        LEFT JOIN app_user u ON o.app_user_id = u.id
+        WHERE o.store_id = $1;`,
         [storeId]
     );
     return result.rows;
@@ -242,4 +294,21 @@ export const getOrderDetailById = async(orderId : number) => {
 
     const result = await pool.query(query, [orderId]);
     return result.rows[0];
+}
+
+export const updateShippingUnitForOrder = async (orderId: number, shipping_method: 'American Post' | 'Europe Express' | 'Fast Post' | 'Airline Express') => {
+    await pool.query('UPDATE public.shipping SET shipping_unit=$1 WHERE order_id=$2', [shipping_method, orderId]);
+};
+
+export const checkWhetherOrderCanUpdateShippingUnit = async (orderId: number) => {
+    const result = await pool.query(
+        'SELECT status FROM public.order_log WHERE order_id=$1 ORDER BY created_at DESC LIMIT 1',
+        [orderId]
+    );
+
+    if(result.rows[0]?.status === 'Order Pending' || result.rows[0]?.status === 'Wait for payment' || result.rows[0]?.status === 'Order confirmed' || result.rows[0]?.status === 'Packaging'){
+        return true;
+    }
+
+    return false;
 }
